@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "BORG" 1 "2022-02-19" "" "borg backup tool"
+.TH "BORG" 1 "2024-11-16" "" "borg backup tool"
 .SH NAME
 borg \- deduplicating and encrypting backup tool
 .SH SYNOPSIS
@@ -40,11 +40,11 @@ borg [common options] <command> [options] [arguments]
 BorgBackup (short: Borg) is a deduplicating backup program.
 Optionally, it supports compression and authenticated encryption.
 .sp
-The main goal of Borg is to provide an efficient and secure way to backup data.
+The main goal of Borg is to provide an efficient and secure way to back data up.
 The data deduplication technique used makes Borg suitable for daily backups
 since only changes are stored.
-The authenticated encryption technique makes it suitable for backups to not
-fully trusted targets.
+The authenticated encryption technique makes it suitable for backups to targets not
+fully trusted.
 .sp
 Borg stores a set of files in an \fIarchive\fP\&. A \fIrepository\fP is a collection
 of \fIarchives\fP\&. The format of repositories is Borg\-specific. Borg does not
@@ -54,68 +54,62 @@ it does not matter when or where archives were created (e.g. different hosts).
 .SS A step\-by\-step example
 .INDENT 0.0
 .IP 1. 3
-Before a backup can be made a repository has to be initialized:
+Before a backup can be made, a repository has to be initialized:
 .INDENT 3.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ borg init \-\-encryption=repokey /path/to/repo
+$ borg \-r /path/to/repo repo\-create \-\-encryption=repokey\-aes\-ocb
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .IP 2. 3
-Backup the \fB~/src\fP and \fB~/Documents\fP directories into an archive called
-\fIMonday\fP:
+Back up the \fB~/src\fP and \fB~/Documents\fP directories into an archive called
+\fIdocs\fP:
 .INDENT 3.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ borg create /path/to/repo::Monday ~/src ~/Documents
+$ borg \-r /path/to/repo create docs ~/src ~/Documents
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .IP 3. 3
-The next day create a new archive called \fITuesday\fP:
+The next day create a new archive using the same archive name:
 .INDENT 3.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ borg create \-\-stats /path/to/repo::Tuesday ~/src ~/Documents
+$ borg \-r /path/to/repo create \-\-stats docs ~/src ~/Documents
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-This backup will be a lot quicker and a lot smaller since only new never
+This backup will be a lot quicker and a lot smaller since only new, never
 before seen data is stored. The \fB\-\-stats\fP option causes Borg to
-output statistics about the newly created archive such as the amount of unique
-data (not shared with other archives):
+output statistics about the newly created archive such as the deduplicated
+size (the amount of unique data not shared with other archives):
 .INDENT 3.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
-Archive name: Tuesday
-Archive fingerprint: bd31004d58f51ea06ff735d2e5ac49376901b21d58035f8fb05dbf866566e3c2
-Time (start): Tue, 2016\-02\-16 18:15:11
-Time (end):   Tue, 2016\-02\-16 18:15:11
-
-Duration: 0.19 seconds
-Number of files: 127
-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
-                      Original size      Compressed size    Deduplicated size
-This archive:                4.16 MB              4.17 MB             26.78 kB
-All archives:                8.33 MB              8.34 MB              4.19 MB
-
-                      Unique chunks         Total chunks
-Chunk index:                     132                  261
-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+Repository: /path/to/repo
+Archive name: docs
+Archive fingerprint: bcd1b53f9b4991b7afc2b339f851b7ffe3c6d030688936fe4552eccc1877718d
+Time (start): Sat, 2022\-06\-25 20:21:43
+Time (end):   Sat, 2022\-06\-25 20:21:43
+Duration: 0.07 seconds
+Utilization of max. archive size: 0%
+Number of files: 699
+Original size: 31.14 MB
+Deduplicated size: 502 B
 .ft P
 .fi
 .UNINDENT
@@ -127,21 +121,21 @@ List all archives in the repository:
 .sp
 .nf
 .ft C
-$ borg list /path/to/repo
-Monday                               Mon, 2016\-02\-15 19:14:44
-Tuesday                              Tue, 2016\-02\-16 19:15:11
+$ borg \-r /path/to/repo repo\-list
+docs                                 Sat, 2022\-06\-25 20:21:14 [b80e24d2...b179f298]
+docs                                 Sat, 2022\-06\-25 20:21:43 [bcd1b53f...1877718d]
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .IP 5. 3
-List the contents of the \fIMonday\fP archive:
+List the contents of the first archive:
 .INDENT 3.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ borg list /path/to/repo::Monday
+$ borg \-r /path/to/repo list aid:b80e24d2
 drwxr\-xr\-x user   group          0 Mon, 2016\-02\-15 18:22:30 home/user/Documents
 \-rw\-r\-\-r\-\- user   group       7961 Mon, 2016\-02\-15 18:22:30 home/user/Documents/Important.doc
 \&...
@@ -150,25 +144,40 @@ drwxr\-xr\-x user   group          0 Mon, 2016\-02\-15 18:22:30 home/user/Docume
 .UNINDENT
 .UNINDENT
 .IP 6. 3
-Restore the \fIMonday\fP archive by extracting the files relative to the current directory:
+Restore the first archive by extracting the files relative to the current directory:
 .INDENT 3.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ borg extract /path/to/repo::Monday
+$ borg \-r /path/to/repo extract aid:b80e24d2
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .IP 7. 3
-Recover disk space by manually deleting the \fIMonday\fP archive:
+Delete the first archive (please note that this does \fBnot\fP free repo disk space):
 .INDENT 3.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ borg delete /path/to/repo::Monday
+$ borg \-r /path/to/repo delete aid:b80e24d2
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Be careful if you use an archive NAME (and not an archive ID), that might match multiple archives!
+Always first use with \fB\-\-dry\-run\fP and \fB\-\-list\fP!
+.IP 8. 3
+Recover disk space by compacting the segment files in the repo:
+.INDENT 3.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ borg \-r /path/to/repo compact \-v
 .ft P
 .fi
 .UNINDENT
@@ -178,7 +187,7 @@ $ borg delete /path/to/repo::Monday
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-Borg is quiet by default (it works on WARNING log level).
+Borg is quiet by default (it defaults to WARNING log level).
 You can use options like \fB\-\-progress\fP or \fB\-\-list\fP to get specific
 reports during command execution.  You can also add the \fB\-v\fP (or
 \fB\-\-verbose\fP or \fB\-\-info\fP) option to adjust the log level to INFO to
@@ -196,10 +205,10 @@ in the example), but not in between them:
 .sp
 .nf
 .ft C
-borg create \-s \-\-progress repo::archive path  # good and preferred
-borg create repo::archive path \-s \-\-progress  # also works
-borg create \-s repo::archive path \-\-progress  # works, but ugly
-borg create repo::archive \-s \-\-progress path  # BAD
+borg create \-s \-\-progress archive path  # good and preferred
+borg create archive path \-s \-\-progress  # also works
+borg create \-s archive path \-\-progress  # works, but ugly
+borg create archive \-s \-\-progress path  # BAD
 .ft P
 .fi
 .UNINDENT
@@ -221,28 +230,21 @@ Note: you may also prepend a \fBfile://\fP to a filesystem path to get URL style
 .sp
 \fBRemote repositories\fP accessed via ssh \fI\%user@host\fP:
 .sp
-\fBuser@host:/path/to/repo\fP \- remote repo, absolute path
+\fBssh://user@host:port//abs/path/to/repo\fP \- absolute path
 .sp
-\fBssh://user@host:port/path/to/repo\fP \- same, alternative syntax, port can be given
+\fBssh://user@host:port/rel/path/to/repo\fP \- path relative to current directory
 .sp
-\fBRemote repositories with relative paths\fP can be given using this syntax:
+\fBRemote repositories\fP accessed via sftp:
 .sp
-\fBuser@host:path/to/repo\fP \- path relative to current directory
+\fBsftp://user@host:port//abs/path/to/repo\fP \- absolute path
 .sp
-\fBuser@host:~/path/to/repo\fP \- path relative to user\(aqs home directory
+\fBsftp://user@host:port/rel/path/to/repo\fP \- path relative to current directory
 .sp
-\fBuser@host:~other/path/to/repo\fP \- path relative to other\(aqs home directory
+For ssh and sftp URLs, the \fBuser@\fP and \fB:port\fP parts are optional.
 .sp
-Note: giving \fBuser@host:/./path/to/repo\fP or \fBuser@host:/~/path/to/repo\fP or
-\fBuser@host:/~other/path/to/repo\fP is also supported, but not required here.
+\fBRemote repositories\fP accessed via rclone:
 .sp
-\fBRemote repositories with relative paths, alternative syntax with port\fP:
-.sp
-\fBssh://user@host:port/./path/to/repo\fP \- path relative to current directory
-.sp
-\fBssh://user@host:port/~/path/to/repo\fP \- path relative to user\(aqs home directory
-.sp
-\fBssh://user@host:port/~other/path/to/repo\fP \- path relative to other\(aqs home directory
+\fBrclone:remote:path\fP \- see the rclone docs for more details about remote:path.
 .sp
 If you frequently need the same repo URL, it is a good idea to set the
 \fBBORG_REPO\fP environment variable to set a default for the repo URL:
@@ -251,29 +253,27 @@ If you frequently need the same repo URL, it is a good idea to set the
 .sp
 .nf
 .ft C
-export BORG_REPO=\(aqssh://user@host:port/path/to/repo\(aq
+export BORG_REPO=\(aqssh://user@host:port/rel/path/to/repo\(aq
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Then just leave away the repo URL if only a repo URL is needed and you want
+Then just leave away the \fB\-\-repo\fP option if you want
 to use the default \- it will be read from BORG_REPO then.
+.SS Repository Locations / Archive names
 .sp
-Use \fB::\fP syntax to give the repo URL when syntax requires giving a positional
-argument for the repo (e.g. \fBborg mount :: /mnt\fP).
-.SS Repository / Archive Locations
+Many commands need to know the repository location, give it via \fB\-r\fP / \fB\-\-repo\fP
+or use the \fBBORG_REPO\fP environment variable.
 .sp
-Many commands want either a repository (just give the repo URL, see above) or
-an archive location, which is a repo URL followed by \fB::archive_name\fP\&.
+Commands needing one or two archive names usually get them as positional argument.
+.sp
+Commands working with an arbitrary amount of archives, usually take \fB\-a ARCH_GLOB\fP\&.
 .sp
 Archive names must not contain the \fB/\fP (slash) character. For simplicity,
 maybe also avoid blanks or other characters that have special meaning on the
 shell or in a filesystem (borg mount will use the archive name as directory
 name).
-.sp
-If you have set BORG_REPO (see above) and an archive location is needed, use
-\fB::archive_name\fP \- the repo URL part is then read from BORG_REPO.
 .SS Logging
 .sp
 Borg writes all log output to stderr by default. But please note that something
@@ -349,15 +349,27 @@ _
 T{
 1
 T}	T{
-warning (operation reached its normal end, but there were warnings \-\-
+generic warning (operation reached its normal end, but there were warnings \-\-
 you should check the log, logged as WARNING)
 T}
 _
 T{
 2
 T}	T{
-error (like a fatal error, a local or remote exception, the operation
+generic error (like a fatal error, a local or remote exception, the operation
 did not reach its normal end, logged as ERROR)
+T}
+_
+T{
+3..99
+T}	T{
+specific error (enabled by BORG_EXIT_CODES=modern)
+T}
+_
+T{
+100..127
+T}	T{
+specific warning (enabled by BORG_EXIT_CODES=modern)
 T}
 _
 T{
@@ -370,6 +382,8 @@ _
 .sp
 If you use \fB\-\-show\-rc\fP, the return code is also logged at the indicated
 level as the last log entry.
+.sp
+The modern exit codes (return codes, \(dqrc\(dq) are documented there: \fImsgid\fP
 .SS Environment Variables
 .sp
 Borg uses some environment variables for automation:
@@ -379,9 +393,11 @@ Borg uses some environment variables for automation:
 .INDENT 7.0
 .TP
 .B BORG_REPO
-When set, use the value to give the default repository location. If a command needs an archive
-parameter, you can abbreviate as \fB::archive\fP\&. If a command needs a repository parameter, you
-can either leave it away or abbreviate as \fB::\fP, if a positional parameter is required.
+When set, use the value to give the default repository location.
+Use this so you do not need to type \fB\-\-repo /path/to/my/repo\fP all the time.
+.TP
+.B BORG_OTHER_REPO
+Similar to BORG_REPO, but gives the default for \fB\-\-other\-repo\fP\&.
 .TP
 .B BORG_PASSPHRASE
 When set, use the value to answer the passphrase question for encrypted repositories.
@@ -410,18 +426,27 @@ If BORG_PASSPHRASE or BORG_PASSCOMMAND are also set, they take precedence.
 When set, use the value to answer the passphrase question when a \fBnew\fP passphrase is asked for.
 This variable is checked first. If it is not set, BORG_PASSPHRASE and BORG_PASSCOMMAND will also
 be checked.
-Main usecase for this is to fully automate \fBborg change\-passphrase\fP\&.
+Main usecase for this is to automate fully \fBborg change\-passphrase\fP\&.
 .TP
 .B BORG_DISPLAY_PASSPHRASE
-When set, use the value to answer the "display the passphrase for verification" question when defining a new passphrase for encrypted repositories.
+When set, use the value to answer the \(dqdisplay the passphrase for verification\(dq question when defining a new passphrase for encrypted repositories.
+.TP
+.B BORG_EXIT_CODES
+When set to \(dqmodern\(dq, the borg process will return more specific exit codes (rc).
+When set to \(dqlegacy\(dq, the borg process will return rc 2 for all errors, 1 for all warnings, 0 for success.
+Default is \(dqmodern\(dq.
 .TP
 .B BORG_HOST_ID
 Borg usually computes a host id from the FQDN plus the results of \fBuuid.getnode()\fP (which usually returns
 a unique id based on the MAC address of the network interface. Except if that MAC happens to be all\-zero \- in
 that case it returns a random value, which is not what we want (because it kills automatic stale lock removal).
-So, if you have a all\-zero MAC address or other reasons to better externally control the host id, just set this
+So, if you have a all\-zero MAC address or other reasons to control better externally the host id, just set this
 environment variable to a unique value. If all your FQDNs are unique, you can just use the FQDN. If not,
 use \fI\%fqdn@uniqueid\fP\&.
+.TP
+.B BORG_LOCK_WAIT
+You can set the default value for the \fB\-\-lock\-wait\fP option with this, so
+you do not need to give it as a commandline option.
 .TP
 .B BORG_LOGGING_CONF
 When set, use the given filename as \fI\%INI\fP\-style logging configuration.
@@ -433,7 +458,7 @@ a custom identity file \fBssh \-i /path/to/private/key\fP\&. See \fBman ssh\fP f
 the \fB\-\-rsh CMD\fP commandline option overrides the environment variable.
 .TP
 .B BORG_REMOTE_PATH
-When set, use the given path as borg executable on the remote (defaults to "borg" if unset).
+When set, use the given path as borg executable on the remote (defaults to \(dqborg\(dq if unset).
 Using \fB\-\-remote\-path PATH\fP commandline option overrides the environment variable.
 .TP
 .B BORG_FILES_CACHE_SUFFIX
@@ -442,9 +467,12 @@ When set to a value at least one character long, instructs borg to use a specifi
 cache entries for backup sources other than the current sources.
 .TP
 .B BORG_FILES_CACHE_TTL
-When set to a numeric value, this determines the maximum "time to live" for the files cache
-entries (default: 20). The files cache is used to quickly determine whether a file is unchanged.
-The FAQ explains this more detailed in: \fIalways_chunking\fP
+When set to a numeric value, this determines the maximum \(dqtime to live\(dq for the files cache
+entries (default: 2). The files cache is used to determine quickly whether a file is unchanged.
+.TP
+.B BORG_USE_CHUNKS_ARCHIVE
+When set to no (default: yes), the \fBchunks.archive.d\fP folder will not be used. This reduces
+disk space usage but slows down cache resyncs.
 .TP
 .B BORG_SHOW_SYSINFO
 When set to no (default: yes), system information (like OS, Python version, ...) in
@@ -495,23 +523,68 @@ write to disk behaviour (not continuously streaming to disk).
 Retry opening a file without O_NOATIME if opening a file with O_NOATIME
 caused EROFS. You will need this to make archives from volume shadow copies
 in WSL1 (Windows Subsystem for Linux 1).
+.TP
+.B authenticated_no_key
+Work around a lost passphrase or key for an \fBauthenticated\fP mode repository
+(these are only authenticated, but not encrypted).
+If the key is missing in the repository config, add \fBkey = anything\fP there.
+.sp
+This workaround is \fBonly\fP for emergencies and \fBonly\fP to extract data
+from an affected repository (read\-only access):
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+BORG_WORKAROUNDS=authenticated_no_key borg extract repo::archive
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+After you have extracted all data you need, you MUST delete the repository:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+BORG_WORKAROUNDS=authenticated_no_key borg delete repo
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Now you can init a fresh repo. Make sure you do not use the workaround any more.
 .UNINDENT
 .UNINDENT
 .TP
-.B Some automatic "answerers" (if set, they automatically answer confirmation questions):
+.B Output formatting:
+.INDENT 7.0
+.TP
+.B BORG_LIST_FORMAT
+Giving the default value for \fBborg repo\-list \-\-format=X\fP\&.
+.TP
+.B BORG_RLIST_FORMAT
+Giving the default value for \fBborg repo\-list \-\-format=X\fP\&.
+.TP
+.B BORG_PRUNE_FORMAT
+Giving the default value for \fBborg prune \-\-format=X\fP\&.
+.UNINDENT
+.TP
+.B Some automatic \(dqanswerers\(dq (if set, they automatically answer confirmation questions):
 .INDENT 7.0
 .TP
 .B BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK=no (or =yes)
-For "Warning: Attempting to access a previously unknown unencrypted repository"
+For \(dqWarning: Attempting to access a previously unknown unencrypted repository\(dq
 .TP
 .B BORG_RELOCATED_REPO_ACCESS_IS_OK=no (or =yes)
-For "Warning: The repository at location ... was previously located at ..."
+For \(dqWarning: The repository at location ... was previously located at ...\(dq
 .TP
 .B BORG_CHECK_I_KNOW_WHAT_I_AM_DOING=NO (or =YES)
-For "This is a potentially dangerous function..." (check \-\-repair)
+For \(dqThis is a potentially dangerous function...\(dq (check \-\-repair)
 .TP
 .B BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=NO (or =YES)
-For "You requested to completely DELETE the repository \fIincluding\fP all archives it contains:"
+For \(dqYou requested to DELETE the repository completely \fIincluding\fP all archives it contains:\(dq
 .UNINDENT
 .sp
 Note: answers are case sensitive. setting an invalid answer value might either give the default
@@ -542,17 +615,44 @@ Defaults to \fB$BORG_BASE_DIR/.config/borg\fP\&. If \fBBORG_BASE_DIR\fP is not e
 This directory contains all borg configuration directories, see the FAQ
 for a security advisory about the data in this directory: \fIhome_config_borg\fP
 .TP
+.B BORG_DATA_DIR
+Defaults to \fB$BORG_BASE_DIR/.local/share/borg\fP\&. If \fBBORG_BASE_DIR\fP is not explicitly set while
+\fI\%XDG env var\fP \fBXDG_DATA_HOME\fP is set, then \fB$XDG_DATA_HOME/borg\fP is being used instead.
+This directory contains all borg data directories, see the FAQ
+for a security advisory about the data in this directory: \fIhome_data_borg\fP
+.TP
+.B BORG_RUNTIME_DIR
+Defaults to \fB$BORG_BASE_DIR/.cache/borg\fP\&. If \fBBORG_BASE_DIR\fP is not explicitly set while
+\fI\%XDG env var\fP \fBXDG_RUNTIME_DIR\fP is set, then \fB$XDG_RUNTIME_DIR/borg\fP is being used instead.
+This directory contains borg runtime files, like e.g. the socket file.
+.TP
 .B BORG_SECURITY_DIR
-Defaults to \fB$BORG_CONFIG_DIR/security\fP\&.
-This directory contains information borg uses to track its usage of NONCES ("numbers used
-once" \- usually in encryption context) and other security relevant data.
+Defaults to \fB$BORG_DATA_DIR/security\fP\&.
+This directory contains security relevant data.
 .TP
 .B BORG_KEYS_DIR
 Defaults to \fB$BORG_CONFIG_DIR/keys\fP\&.
 This directory contains keys for encrypted repositories.
 .TP
 .B BORG_KEY_FILE
-When set, use the given filename as repository key file.
+When set, use the given path as repository key file. Please note that this is only
+for rather special applications that externally fully manage the key files:
+.INDENT 7.0
+.IP \(bu 2
+this setting only applies to the keyfile modes (not to the repokey modes).
+.IP \(bu 2
+using a full, absolute path to the key file is recommended.
+.IP \(bu 2
+all directories in the given path must exist.
+.IP \(bu 2
+this setting forces borg to use the key file at the given location.
+.IP \(bu 2
+the key file must either exist (for most commands) or will be created (\fBborg repo\-create\fP).
+.IP \(bu 2
+you need to give a different path for different repositories.
+.IP \(bu 2
+you need to point to the correct key file matching the repository the command will operate on.
+.UNINDENT
 .TP
 .B TMPDIR
 This is where temporary files are stored (might need a lot of temporary space for some
@@ -562,16 +662,19 @@ operations), see \fI\%tempfile\fP for details.
 .B Building:
 .INDENT 7.0
 .TP
+.B BORG_OPENSSL_NAME
+Defines the subdirectory name for OpenSSL (setup.py).
+.TP
 .B BORG_OPENSSL_PREFIX
 Adds given OpenSSL header file directory to the default locations (setup.py).
+.TP
+.B BORG_LIBACL_PREFIX
+Adds given prefix directory to the default locations. If an \(aqinclude/acl/libacl.h\(aq is found
+Borg will be linked against the system libacl instead of a bundled implementation. (setup.py)
 .TP
 .B BORG_LIBLZ4_PREFIX
 Adds given prefix directory to the default locations. If a \(aqinclude/lz4.h\(aq is found Borg
 will be linked against the system liblz4 instead of a bundled implementation. (setup.py)
-.TP
-.B BORG_LIBB2_PREFIX
-Adds given prefix directory to the default locations. If a \(aqinclude/blake2.h\(aq is found Borg
-will be linked against the system libb2 instead of a bundled implementation. (setup.py)
 .TP
 .B BORG_LIBZSTD_PREFIX
 Adds given prefix directory to the default locations. If a \(aqinclude/zstd.h\(aq is found Borg
@@ -582,46 +685,55 @@ will be linked against the system libzstd instead of a bundled implementation. (
 Please note:
 .INDENT 0.0
 .IP \(bu 2
-Be very careful when using the "yes" sayers, the warnings with prompt exist for your / your data\(aqs security/safety.
+Be very careful when using the \(dqyes\(dq sayers, the warnings with prompt exist for your / your data\(aqs security/safety.
 .IP \(bu 2
 Also be very careful when putting your passphrase into a script, make sure it has appropriate file permissions (e.g.
 mode 600, root:root).
 .UNINDENT
 .SS File systems
 .sp
-We strongly recommend against using Borg (or any other database\-like
-software) on non\-journaling file systems like FAT, since it is not
-possible to assume any consistency in case of power failures (or a
-sudden disconnect of an external drive or similar failures).
+We recommend using a reliable, scalable journaling filesystem for the
+repository, e.g. zfs, btrfs, ext4, apfs.
 .sp
-While Borg uses a data store that is resilient against these failures
-when used on journaling file systems, it is not possible to guarantee
-this with some hardware \-\- independent of the software used. We don\(aqt
-know a list of affected hardware.
+Borg now uses the \fBborgstore\fP package to implement the key/value store it
+uses for the repository.
 .sp
-If you are suspicious whether your Borg repository is still consistent
-and readable after one of the failures mentioned above occurred, run
-\fBborg check \-\-verify\-data\fP to make sure it is consistent.
-Requirements for Borg repository file systems
+It currently uses the \fBfile:\fP Store (posixfs backend) either with a local
+directory or via ssh and a remote \fBborg serve\fP agent using borgstore on the
+remote side.
+.sp
+This means that it will store each chunk into a separate filesystem file
+(for more details, see the \fBborgstore\fP project).
+.sp
+This has some pros and cons (compared to legacy borg 1.x\(aqs segment files):
+.sp
+Pros:
 .INDENT 0.0
 .IP \(bu 2
-Long file names
+Simplicity and better maintainability of the borg code.
 .IP \(bu 2
-At least three directory levels with short names
+Sometimes faster, less I/O, better scalability: e.g. borg compact can just
+remove unused chunks by deleting a single file and does not need to read
+and re\-write segment files to free space.
 .IP \(bu 2
-Typically, file sizes up to a few hundred MB.
-Large repositories may require large files (>2 GB).
+In future, easier to adapt to other kinds of storage:
+borgstore\(aqs backends are quite simple to implement.
+\fBsftp:\fP and \fBrclone:\fP backends already exist, others might be easy to add.
 .IP \(bu 2
-Up to 1000 files per directory (10000 for repositories initialized with Borg 1.0)
+Parallel repository access with less locking is easier to implement.
+.UNINDENT
+.sp
+Cons:
+.INDENT 0.0
 .IP \(bu 2
-rename(2) / MoveFile(Ex) should work as specified, i.e. on the same file system
-it should be a move (not a copy) operation, and in case of a directory
-it should fail if the destination exists and is not an empty directory,
-since this is used for locking.
+The repository filesystem will have to deal with a big amount of files (there
+are provisions in borgstore against having too many files in a single directory
+by using a nested directory structure).
 .IP \(bu 2
-Hardlinks are needed for \fIborg_upgrade\fP (if \fB\-\-inplace\fP option is not used).
-Also hardlinks are used for more safe and secure file updating (e.g. of the repo
-config file), but the code tries to work also if hardlinks are not supported.
+Bigger fs space usage overhead (will depend on allocation block size \- modern
+filesystems like zfs are rather clever here using a variable block size).
+.IP \(bu 2
+Sometimes slower, due to less sequential / more random access operations.
 .UNINDENT
 .SS Units
 .sp
@@ -639,6 +751,10 @@ For more information about that, see: \fI\%https://xkcd.com/1179/\fP
 .sp
 Unless otherwise noted, we display local date and time.
 Internally, we store and process date and time as UTC.
+TIMESPAN
+.sp
+Some options accept a TIMESPAN parameter, which can be given as a
+number of days (e.g. \fB7d\fP) or months (e.g. \fB12m\fP).
 .SS Resource Usage
 .sp
 Borg might use a lot of resources depending on the size of the data set it is dealing with.
@@ -727,7 +843,7 @@ process.
 For some OSes, this can be done just by setting the correct value in the
 \&.bashrc (or equivalent login config file for other shells), however in
 other cases it may be necessary to first enable \fBPermitUserEnvironment yes\fP
-in your \fBsshd_config\fP file, then add \fBenvironment="TMPDIR=/my/big/tmpdir"\fP
+in your \fBsshd_config\fP file, then add \fBenvironment=\(dqTMPDIR=/my/big/tmpdir\(dq\fP
 at the start of the public key to be used in the \fBauthorized_hosts\fP file.
 .TP
 .B Cache files (client only):
@@ -740,7 +856,7 @@ If your repository is remote, all deduplicated (and optionally compressed/
 encrypted) data of course has to go over the connection (\fBssh://\fP repo url).
 If you use a locally mounted network filesystem, additionally some copy
 operations used for transaction support also go over the connection. If
-you backup multiple sources to one target repository, additional traffic
+you back up multiple sources to one target repository, additional traffic
 happens for cache resynchronization.
 .UNINDENT
 .SS Support for file metadata
@@ -755,13 +871,13 @@ special files:
 .IP \(bu 2
 character and block device files (restored via mknod)
 .IP \(bu 2
-FIFOs ("named pipes")
+FIFOs (\(dqnamed pipes\(dq)
 .IP \(bu 2
 special file \fIcontents\fP can be backed up in \fB\-\-read\-special\fP mode.
 By default the metadata to create them with mknod(2), mkfifo(2) etc. is stored.
 .UNINDENT
 .IP \(bu 2
-hardlinked regular files, devices, FIFOs (considering all items in the same archive)
+hardlinked regular files, devices, symlinks, FIFOs (considering all items in the same archive)
 .IP \(bu 2
 timestamps in nanosecond precision: mtime, atime, ctime
 .IP \(bu 2
@@ -809,7 +925,7 @@ Yes [1]
 T}
 _
 T{
-Mac OS X
+macOS
 T}	T{
 Yes
 T}	T{
@@ -875,7 +991,7 @@ Other Unix\-like operating systems may work as well, but have not been tested at
 Note that most of the platform\-dependent features also depend on the file system.
 For example, ntfs\-3g on Linux isn\(aqt able to convey NTFS ACLs.
 .IP [1] 5
-Only "nodump", "immutable", "compressed" and "append" are supported.
+Only \(dqnodump\(dq, \(dqimmutable\(dq, \(dqcompressed\(dq and \(dqappend\(dq are supported.
 Feature request #618 for more flags.
 .IP [2] 5
 Feature request #1332
@@ -896,10 +1012,10 @@ The BSDs define additional flags.
 .sp
 \fIborg\-common(1)\fP for common command line options
 .sp
-\fIborg\-init(1)\fP,
+\fIborg\-repo\-create(1)\fP, \fIborg\-repo\-delete(1)\fP, \fIborg\-repo\-list(1)\fP, \fIborg\-repo\-info(1)\fP,
 \fIborg\-create(1)\fP, \fIborg\-mount(1)\fP, \fIborg\-extract(1)\fP,
 \fIborg\-list(1)\fP, \fIborg\-info(1)\fP,
-\fIborg\-delete(1)\fP, \fIborg\-prune(1)\fP,
+\fIborg\-delete(1)\fP, \fIborg\-prune(1)\fP, \fIborg\-compact(1)\fP,
 \fIborg\-recreate(1)\fP
 .sp
 \fIborg\-compression(1)\fP, \fIborg\-patterns(1)\fP, \fIborg\-placeholders(1)\fP

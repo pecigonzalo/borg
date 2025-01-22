@@ -1,6 +1,23 @@
-|screencast_basic|
+This is borg2!
+--------------
 
-More screencasts: `installation`_, `advanced usage`_
+Please note that this is the README for borg2 / master branch.
+
+For the stable version's docs, please see there:
+
+https://borgbackup.readthedocs.io/en/stable/
+
+Borg2 is currently in beta testing and might get major and/or
+breaking changes between beta releases (and there is no beta to
+next-beta upgrade code, so you will have to delete and re-create repos).
+
+Thus, **DO NOT USE BORG2 FOR YOUR PRODUCTION BACKUPS!** Please help with
+testing it, but set it up *additionally* to your production backups.
+
+TODO: the screencasts need a remake using borg2, see there:
+
+https://github.com/borgbackup/borg/issues/6303
+
 
 What is BorgBackup?
 -------------------
@@ -8,11 +25,11 @@ What is BorgBackup?
 BorgBackup (short: Borg) is a deduplicating backup program.
 Optionally, it supports compression and authenticated encryption.
 
-The main goal of Borg is to provide an efficient and secure way to backup data.
+The main goal of Borg is to provide an efficient and secure way to back up data.
 The data deduplication technique used makes Borg suitable for daily backups
 since only changes are stored.
-The authenticated encryption technique makes it suitable for backups to not
-fully trusted targets.
+The authenticated encryption technique makes it suitable for backups to targets not
+fully trusted.
 
 See the `installation manual`_ or, if you have already
 downloaded Borg, ``docs/installation.rst`` to get started with Borg.
@@ -52,12 +69,13 @@ Main features
 **Speed**
   * performance-critical code (chunking, compression, encryption) is
     implemented in C/Cython
-  * local caching of files/chunks index data
+  * local caching
   * quick detection of unmodified files
 
 **Data encryption**
-    All data can be protected using 256-bit AES encryption, data integrity and
-    authenticity is verified using HMAC-SHA256. Data is encrypted clientside.
+    All data can be protected client-side using 256-bit authenticated encryption
+    (AES-OCB or chacha20-poly1305), ensuring data confidentiality, integrity and
+    authenticity.
 
 **Obfuscation**
     Optionally, borg can actively obfuscate e.g. the size of files / chunks to
@@ -86,7 +104,7 @@ Main features
     you can just run them on these platforms:
 
     * Linux
-    * Mac OS X
+    * macOS
     * FreeBSD
     * OpenBSD and NetBSD (no xattrs/ACLs support or binaries yet)
     * Cygwin (experimental, no binaries yet)
@@ -100,35 +118,31 @@ Main features
 Easy to use
 ~~~~~~~~~~~
 
-Initialize a new backup repository (see ``borg init --help`` for encryption options)::
+For ease of use, set the BORG_REPO environment variable::
 
-    $ borg init -e repokey /path/to/repo
+    $ export BORG_REPO=/path/to/repo
 
-Create a backup archive::
+Create a new backup repository (see ``borg repo-create --help`` for encryption options)::
 
-    $ borg create /path/to/repo::Saturday1 ~/Documents
+    $ borg repo-create -e repokey-aes-ocb
+
+Create a new backup archive::
+
+    $ borg create Monday1 ~/Documents
 
 Now doing another backup, just to show off the great deduplication::
 
-    $ borg create -v --stats /path/to/repo::Saturday2 ~/Documents
-    -----------------------------------------------------------------------------
-    Archive name: Saturday2
-    Archive fingerprint: 622b7c53c...
-    Time (start): Sat, 2016-02-27 14:48:13
-    Time (end):   Sat, 2016-02-27 14:48:14
-    Duration: 0.88 seconds
-    Number of files: 163
-    -----------------------------------------------------------------------------
-                   Original size      Compressed size    Deduplicated size
-    This archive:        6.85 MB              6.85 MB             30.79 kB  <-- !
-    All archives:       13.69 MB             13.71 MB              6.88 MB
+    $ borg create -v --stats Monday2 ~/Documents
+    Repository: /path/to/repo
+    Archive name: Monday2
+    Archive fingerprint: 7714aef97c1a24539cc3dc73f79b060f14af04e2541da33d54c7ee8e81a00089
+    Time (start): Mon, 2022-10-03 19:57:35 +0200
+    Time (end):   Mon, 2022-10-03 19:57:35 +0200
+    Duration: 0.01 seconds
+    Number of files: 24
+    Original size: 29.73 MB
+    Deduplicated size: 520 B
 
-                   Unique chunks         Total chunks
-    Chunk index:             167                  330
-    -----------------------------------------------------------------------------
-
-
-For a graphical frontend refer to our complementary project `BorgWeb <https://borgweb.readthedocs.io/>`_.
 
 Helping, Donations and Bounties, becoming a Patron
 --------------------------------------------------
@@ -171,11 +185,7 @@ see ``docs/support.rst`` in the source distribution).
 
 .. start-badges
 
-|doc| |build| |coverage| |bestpractices| |bounties|
-
-.. |bounties| image:: https://api.bountysource.com/badge/team?team_id=78284&style=bounties_posted
-        :alt: Bounty Source
-        :target: https://www.bountysource.com/teams/borgbackup
+|doc| |build| |coverage| |bestpractices|
 
 .. |doc| image:: https://readthedocs.org/projects/borgbackup/badge/?version=stable
         :alt: Documentation

@@ -12,12 +12,11 @@ import subprocess
 import sys
 
 verbose = True
-objdump = "objdump -T %s"
-glibc_re = re.compile(r'GLIBC_([0-9]\.[0-9]+)')
+glibc_re = re.compile(r"GLIBC_([0-9]\.[0-9]+)")
 
 
 def parse_version(v):
-    major, minor = v.split('.')
+    major, minor = v.split(".")
     return int(major), int(minor)
 
 
@@ -32,15 +31,13 @@ def main():
     overall_versions = set()
     for filename in filenames:
         try:
-            output = subprocess.check_output(objdump % filename, shell=True,
-                                             stderr=subprocess.STDOUT)
+            output = subprocess.check_output(["objdump", "-T", filename], stderr=subprocess.STDOUT)
             output = output.decode()
-            versions = set(parse_version(match.group(1))
-                           for match in glibc_re.finditer(output))
+            versions = {parse_version(match.group(1)) for match in glibc_re.finditer(output)}
             requires_glibc = max(versions)
             overall_versions.add(requires_glibc)
             if verbose:
-                print("%s %s" % (filename, format_version(requires_glibc)))
+                print(f"{filename} {format_version(requires_glibc)}")
         except subprocess.CalledProcessError:
             if verbose:
                 print("%s errored." % filename)
@@ -50,14 +47,15 @@ def main():
 
     if verbose:
         if ok:
-            print("The binaries work with the given glibc %s." %
-                  format_version(given))
+            print("The binaries work with the given glibc %s." % format_version(given))
         else:
-            print("The binaries do not work with the given glibc %s. "
-                  "Minimum is: %s" % (format_version(given), format_version(wanted)))
+            print(
+                "The binaries do not work with the given glibc %s. "
+                "Minimum is: %s" % (format_version(given), format_version(wanted))
+            )
     return ok
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ok = main()
     sys.exit(0 if ok else 1)

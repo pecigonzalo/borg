@@ -13,8 +13,8 @@ else
     GPG=qubes-gpg-client-wrapper
 fi
 
-python setup.py sdist
+python -m build
 
 D=dist/borgbackup-$R.tar.gz
 
-$GPG --detach-sign --local-user "Thomas Waldmann" --armor --output $D.asc $D
+$GPG --detach-sign --local-user "Thomas Waldmann" --armor --output "$D.asc" "$D"

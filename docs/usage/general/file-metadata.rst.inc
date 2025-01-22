@@ -10,7 +10,7 @@ Besides regular file and directory structures, Borg can preserve
   * FIFOs ("named pipes")
   * special file *contents* can be backed up in ``--read-special`` mode.
     By default the metadata to create them with mknod(2), mkfifo(2) etc. is stored.
-* hardlinked regular files, devices, FIFOs (considering all items in the same archive)
+* hardlinked regular files, devices, symlinks, FIFOs (considering all items in the same archive)
 * timestamps in nanosecond precision: mtime, atime, ctime
 * other timestamps: birthtime (on platforms supporting it)
 * permissions:
@@ -29,7 +29,7 @@ On some platforms additional features are supported:
 +=========================+==========+===========+============+
 | Linux                   | Yes      | Yes       | Yes [1]_   |
 +-------------------------+----------+-----------+------------+
-| Mac OS X                | Yes      | Yes       | Yes (all)  |
+| macOS                   | Yes      | Yes       | Yes (all)  |
 +-------------------------+----------+-----------+------------+
 | FreeBSD                 | Yes      | Yes       | Yes (all)  |
 +-------------------------+----------+-----------+------------+

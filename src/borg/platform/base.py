@@ -1,11 +1,10 @@
 import errno
 import os
 import socket
-import tempfile
 import uuid
 
-from borg.helpers import safe_unlink
-from borg.platformflags import is_win32
+from ..helpers import safe_unlink
+from ..platformflags import is_win32
 
 """
 platform base module
@@ -19,9 +18,9 @@ platform API: that way platform APIs provided by the platform-specific support m
 are correctly composed into the base functionality.
 """
 
-API_VERSION = '1.2_05'
+API_VERSION = "1.2_05"
 
-fdatasync = getattr(os, 'fdatasync', os.fsync)
+fdatasync = getattr(os, "fdatasync", os.fsync)
 
 from .xattr import ENOATTR
 
@@ -81,18 +80,20 @@ def acl_set(path, item, numeric_ids=False, fd=None):
 
 
 try:
-    from os import lchflags
+    from os import lchflags  # type: ignore[attr-defined]
 
     def set_flags(path, bsd_flags, fd=None):
         lchflags(path, bsd_flags)
+
 except ImportError:
+
     def set_flags(path, bsd_flags, fd=None):
         pass
 
 
 def get_flags(path, st, fd=None):
     """Return BSD-style file flags for path or stat without following symlinks."""
-    return getattr(st, 'st_flags', 0)
+    return getattr(st, "st_flags", 0)
 
 
 def sync_dir(path):
@@ -113,8 +114,8 @@ def sync_dir(path):
 
 
 def safe_fadvise(fd, offset, len, advice):
-    if hasattr(os, 'posix_fadvise'):
-        advice = getattr(os, 'POSIX_FADV_' + advice)
+    if hasattr(os, "posix_fadvise"):
+        advice = getattr(os, "POSIX_FADV_" + advice)
         try:
             os.posix_fadvise(fd, offset, len, advice)
         except OSError:
@@ -157,7 +158,7 @@ class SyncFile:
                that corresponds to path (like from os.open(path, ...) or os.mkstemp(...))
         :param binary: whether to open in binary mode, default is False.
         """
-        mode = 'xb' if binary else 'x'  # x -> raise FileExists exception in open() if file exists already
+        mode = "xb" if binary else "x"  # x -> raise FileExists exception in open() if file exists already
         self.path = path
         if fd is None:
             self.f = open(path, mode=mode)  # python file object
@@ -180,15 +181,17 @@ class SyncFile:
         after sync().
         """
         from .. import platform
+
         self.f.flush()
         platform.fdatasync(self.fd)
         # tell the OS that it does not need to cache what we just wrote,
         # avoids spoiling the cache for the OS and other processes.
-        safe_fadvise(self.fd, 0, 0, 'DONTNEED')
+        safe_fadvise(self.fd, 0, 0, "DONTNEED")
 
     def close(self):
         """sync() and close."""
         from .. import platform
+
         dirname = None
         try:
             dirname = os.path.dirname(self.path)
@@ -215,28 +218,33 @@ class SaveFile:
     Internally used temporary files are created in the target directory and are
     named <BASENAME>-<RANDOMCHARS>.tmp and cleaned up in normal and error conditions.
     """
+
     def __init__(self, path, binary=False):
         self.binary = binary
         self.path = path
         self.dir = os.path.dirname(path)
-        self.tmp_prefix = os.path.basename(path) + '-'
+        self.tmp_prefix = os.path.basename(path) + "-"
         self.tmp_fd = None  # OS-level fd
         self.tmp_fname = None  # full path/filename corresponding to self.tmp_fd
         self.f = None  # python-file-like SyncFile
 
     def __enter__(self):
         from .. import platform
-        self.tmp_fd, self.tmp_fname = tempfile.mkstemp(prefix=self.tmp_prefix, suffix='.tmp', dir=self.dir)
+        from ..helpers.fs import mkstemp_mode
+
+        self.tmp_fd, self.tmp_fname = mkstemp_mode(prefix=self.tmp_prefix, suffix=".tmp", dir=self.dir, mode=0o666)
         self.f = platform.SyncFile(self.tmp_fname, fd=self.tmp_fd, binary=self.binary)
         return self.f
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         from .. import platform
+
         self.f.close()  # this indirectly also closes self.tmp_fd
         self.tmp_fd = None
         if exc_type is not None:
             safe_unlink(self.tmp_fname)  # with-body has failed, clean up tmp file
             return  # continue processing the exception normally
+
         try:
             os.replace(self.tmp_fname, self.path)  # POSIX: atomic rename
         except OSError:
@@ -255,17 +263,17 @@ def swidth(s):
 
 
 # patched socket.getfqdn() - see https://bugs.python.org/issue5004
-def getfqdn(name=''):
+def getfqdn(name=""):
     """Get fully qualified domain name from name.
 
     An empty argument is interpreted as meaning the local host.
     """
     name = name.strip()
-    if not name or name == '0.0.0.0':
+    if not name or name == "0.0.0.0":
         name = socket.gethostname()
     try:
         addrs = socket.getaddrinfo(name, None, 0, socket.SOCK_DGRAM, 0, socket.AI_CANONNAME)
-    except socket.error:
+    except OSError:
         pass
     else:
         for addr in addrs:
@@ -281,14 +289,14 @@ hostname = socket.gethostname()
 fqdn = getfqdn(hostname)
 # some people put the fqdn into /etc/hostname (which is wrong, should be the short hostname)
 # fix this (do the same as "hostname --short" cli command does internally):
-hostname = hostname.split('.')[0]
+hostname = hostname.split(".")[0]
 
 # uuid.getnode() is problematic in some environments (e.g. OpenVZ, see #3968) where the virtual MAC address
 # is all-zero. uuid.getnode falls back to returning a random value in that case, which is not what we want.
 # thus, we offer BORG_HOST_ID where a user can set an own, unique id for each of his hosts.
-hostid = os.environ.get('BORG_HOST_ID')
+hostid = os.environ.get("BORG_HOST_ID")
 if not hostid:
-    hostid = '%s@%s' % (fqdn, uuid.getnode())
+    hostid = f"{fqdn}@{uuid.getnode()}"
 
 
 def get_process_id():
@@ -301,15 +309,3 @@ def get_process_id():
     thread_id = 0
     pid = os.getpid()
     return hostid, pid, thread_id
-
-
-def process_alive(host, pid, thread):
-    """
-    Check if the (host, pid, thread_id) combination corresponds to a potentially alive process.
-    """
-    raise NotImplementedError
-
-
-def local_pid_alive(pid):
-    """Return whether *pid* is alive."""
-    raise NotImplementedError

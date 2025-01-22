@@ -6,27 +6,17 @@ borg compact
 ------------
 .. code-block:: none
 
-    borg [common options] compact [options] [REPOSITORY]
+    borg [common options] compact [options]
 
 .. only:: html
 
     .. class:: borg-options-table
 
-    +-------------------------------------------------------+-------------------------+----------------------------------------------------------------+
-    | **positional arguments**                                                                                                                         |
-    +-------------------------------------------------------+-------------------------+----------------------------------------------------------------+
-    |                                                       | ``REPOSITORY``          | repository to compact                                          |
-    +-------------------------------------------------------+-------------------------+----------------------------------------------------------------+
-    | **optional arguments**                                                                                                                           |
-    +-------------------------------------------------------+-------------------------+----------------------------------------------------------------+
-    |                                                       | ``--cleanup-commits``   | cleanup commit-only 17-byte segment files                      |
-    +-------------------------------------------------------+-------------------------+----------------------------------------------------------------+
-    |                                                       | ``--threshold PERCENT`` | set minimum threshold for saved space in PERCENT (Default: 10) |
-    +-------------------------------------------------------+-------------------------+----------------------------------------------------------------+
-    | .. class:: borg-common-opt-ref                                                                                                                   |
-    |                                                                                                                                                  |
-    | :ref:`common_options`                                                                                                                            |
-    +-------------------------------------------------------+-------------------------+----------------------------------------------------------------+
+    +-------------------------------------------------------+
+    | .. class:: borg-common-opt-ref                        |
+    |                                                       |
+    | :ref:`common_options`                                 |
+    +-------------------------------------------------------+
 
     .. raw:: html
 
@@ -38,13 +28,6 @@ borg compact
 
 .. only:: latex
 
-    REPOSITORY
-        repository to compact
-
-
-    optional arguments
-        --cleanup-commits       cleanup commit-only 17-byte segment files
-        --threshold PERCENT     set minimum threshold for saved space in PERCENT (Default: 10)
 
 
     :ref:`common_options`
@@ -53,24 +36,33 @@ borg compact
 Description
 ~~~~~~~~~~~
 
-This command frees repository space by compacting segments.
+Free repository space by deleting unused chunks.
 
-Use this regularly to avoid running out of space - you do not need to use this
-after each borg command though. It is especially useful after deleting archives,
-because only compaction will really free repository space.
+borg compact analyzes all existing archives to find out which repository
+objects are actually used (referenced). It then deletes all unused objects
+from the repository to free space.
 
-borg compact does not need a key, so it is possible to invoke it from the
-client or also from the server.
+Unused objects may result from:
 
-Depending on the amount of segments that need compaction, it may take a while,
-so consider using the ``--progress`` option.
+- borg delete or prune usage
+- interrupted backups (maybe retry the backup first before running compact)
+- backup of source files that had an I/O error in the middle of their contents
+  and that were skipped due to this
+- corruption of the repository (e.g. the archives directory having lost
+  entries, see notes below)
 
-A segment is compacted if the amount of saved space is above the percentage value
-given by the ``--threshold`` option. If omitted, a threshold of 10% is used.
-When using ``--verbose``, borg will output an estimate of the freed space.
+You usually don't want to run ``borg compact`` after every write operation, but
+either regularly (e.g. once a month, possibly together with ``borg check``) or
+when disk space needs to be freed.
 
-After upgrading borg (server) to 1.2+, you can use ``borg compact --cleanup-commits``
-to clean up the numerous 17byte commit-only segments that borg 1.1 did not clean up
-due to a bug. It is enough to do that once per repository.
+**Important:**
 
-See :ref:`separate_compaction` in Additional Notes for more details.
+After compacting it is no longer possible to use ``borg undelete`` to recover
+previously soft-deleted archives.
+
+``borg compact`` might also delete data from archives that were "lost" due to
+archives directory corruption. Such archives could potentially be restored with
+``borg check --find-lost-archives [--repair]``, which is slow. You therefore
+might not want to do that unless there are signs of lost archives (e.g. when
+seeing fatal errors when creating backups or when archives are missing in
+``borg repo-list``).

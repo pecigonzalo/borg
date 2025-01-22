@@ -36,25 +36,35 @@ Usage
 .. toctree::
    usage/general
 
-   usage/init
+   usage/repo-create
+   usage/repo-space
+   usage/repo-list
+   usage/repo-info
+   usage/repo-compress
+   usage/repo-delete
+   usage/serve
+   usage/version
+   usage/compact
+   usage/lock
+   usage/key
+
    usage/create
    usage/extract
    usage/check
-   usage/rename
    usage/list
+   usage/tag
+   usage/rename
    usage/diff
    usage/delete
    usage/prune
-   usage/compact
+   usage/undelete
    usage/info
+   usage/analyze
    usage/mount
-   usage/key
-   usage/upgrade
    usage/recreate
    usage/tar
-   usage/serve
-   usage/config
-   usage/lock
+
+   usage/transfer
    usage/benchmark
 
    usage/help

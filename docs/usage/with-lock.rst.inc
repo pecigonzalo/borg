@@ -6,25 +6,23 @@ borg with-lock
 --------------
 .. code-block:: none
 
-    borg [common options] with-lock [options] REPOSITORY COMMAND [ARGS...]
+    borg [common options] with-lock [options] COMMAND [ARGS...]
 
 .. only:: html
 
     .. class:: borg-options-table
 
-    +-------------------------------------------------------+----------------+--------------------+
-    | **positional arguments**                                                                    |
-    +-------------------------------------------------------+----------------+--------------------+
-    |                                                       | ``REPOSITORY`` | repository to lock |
-    +-------------------------------------------------------+----------------+--------------------+
-    |                                                       | ``COMMAND``    | command to run     |
-    +-------------------------------------------------------+----------------+--------------------+
-    |                                                       | ``ARGS``       | command arguments  |
-    +-------------------------------------------------------+----------------+--------------------+
-    | .. class:: borg-common-opt-ref                                                              |
-    |                                                                                             |
-    | :ref:`common_options`                                                                       |
-    +-------------------------------------------------------+----------------+--------------------+
+    +-------------------------------------------------------+-------------+-------------------+
+    | **positional arguments**                                                                |
+    +-------------------------------------------------------+-------------+-------------------+
+    |                                                       | ``COMMAND`` | command to run    |
+    +-------------------------------------------------------+-------------+-------------------+
+    |                                                       | ``ARGS``    | command arguments |
+    +-------------------------------------------------------+-------------+-------------------+
+    | .. class:: borg-common-opt-ref                                                          |
+    |                                                                                         |
+    | :ref:`common_options`                                                                   |
+    +-------------------------------------------------------+-------------+-------------------+
 
     .. raw:: html
 
@@ -36,8 +34,6 @@ borg with-lock
 
 .. only:: latex
 
-    REPOSITORY
-        repository to lock
     COMMAND
         command to run
     ARGS
@@ -50,7 +46,11 @@ borg with-lock
 Description
 ~~~~~~~~~~~
 
-This command runs a user-specified command while the repository lock is held.
+This command runs a user-specified command while locking the repository. For example:
+
+::
+
+    $ BORG_REPO=/mnt/borgrepo borg with-lock rsync -av /mnt/borgrepo /somewhere/else/borgrepo
 
 It will first try to acquire the lock (make sure that no other operation is
 running in the repo), then execute the given command as a subprocess and wait

@@ -2,75 +2,24 @@ import logging
 import io
 import os
 import os.path
-import platform
+import platform  # python stdlib import - if this fails, check that cwd != src/borg/
 import sys
-from collections import deque, OrderedDict
-from datetime import datetime, timezone, timedelta
+from collections import deque
 from itertools import islice
-from operator import attrgetter
 
 from ..logger import create_logger
+
 logger = create_logger()
 
-from .time import to_localtime
 from . import msgpack
 from .. import __version__ as borg_version
-from .. import chunker
-
-
-def prune_within(archives, hours, kept_because):
-    target = datetime.now(timezone.utc) - timedelta(seconds=hours * 3600)
-    kept_counter = 0
-    result = []
-    for a in archives:
-        if a.ts > target:
-            kept_counter += 1
-            kept_because[a.id] = ("within", kept_counter)
-            result.append(a)
-    return result
-
-
-PRUNING_PATTERNS = OrderedDict([
-    ("secondly", '%Y-%m-%d %H:%M:%S'),
-    ("minutely", '%Y-%m-%d %H:%M'),
-    ("hourly", '%Y-%m-%d %H'),
-    ("daily", '%Y-%m-%d'),
-    ("weekly", '%G-%V'),
-    ("monthly", '%Y-%m'),
-    ("yearly", '%Y'),
-])
-
-
-def prune_split(archives, rule, n, kept_because=None):
-    last = None
-    keep = []
-    pattern = PRUNING_PATTERNS[rule]
-    if kept_because is None:
-        kept_because = {}
-    if n == 0:
-        return keep
-
-    a = None
-    for a in sorted(archives, key=attrgetter('ts'), reverse=True):
-        period = to_localtime(a.ts).strftime(pattern)
-        if period != last:
-            last = period
-            if a.id not in kept_because:
-                keep.append(a)
-                kept_because[a.id] = (rule, len(keep))
-                if len(keep) == n:
-                    break
-    # Keep oldest archive if we didn't reach the target retention count
-    if a is not None and len(keep) < n and a.id not in kept_because:
-        keep.append(a)
-        kept_because[a.id] = (rule+"[oldest]", len(keep))
-    return keep
+from ..constants import ROBJ_FILE_STREAM
 
 
 def sysinfo():
-    show_sysinfo = os.environ.get('BORG_SHOW_SYSINFO', 'yes').lower()
-    if show_sysinfo == 'no':
-        return ''
+    show_sysinfo = os.environ.get("BORG_SHOW_SYSINFO", "yes").lower()
+    if show_sysinfo == "no":
+        return ""
 
     python_implementation = platform.python_implementation()
     python_version = platform.python_version()
@@ -80,30 +29,34 @@ def sysinfo():
         uname = os.uname()
     except AttributeError:
         uname = None
-    if sys.platform.startswith('linux'):
-        linux_distribution = ('Unknown Linux', '', '')
+    if sys.platform.startswith("linux"):
+        linux_distribution = ("Unknown Linux", "", "")
     else:
         linux_distribution = None
     try:
-        msgpack_version = '.'.join(str(v) for v in msgpack.version)
-    except:
-        msgpack_version = 'unknown'
+        msgpack_version = ".".join(str(v) for v in msgpack.version)
+    except:  # noqa
+        msgpack_version = "unknown"
     from ..fuse_impl import llfuse, BORG_FUSE_IMPL
-    llfuse_name = llfuse.__name__ if llfuse else 'None'
-    llfuse_version = (' %s' % llfuse.__version__) if llfuse else ''
-    llfuse_info = '%s%s [%s]' % (llfuse_name, llfuse_version, BORG_FUSE_IMPL)
+
+    llfuse_name = llfuse.__name__ if llfuse else "None"
+    llfuse_version = (" %s" % llfuse.__version__) if llfuse else ""
+    llfuse_info = f"{llfuse_name}{llfuse_version} [{BORG_FUSE_IMPL}]"
     info = []
     if uname is not None:
-        info.append('Platform: %s' % (' '.join(uname), ))
+        info.append("Platform: {}".format(" ".join(uname)))
     if linux_distribution is not None:
-        info.append('Linux: %s %s %s' % linux_distribution)
-    info.append('Borg: %s  Python: %s %s msgpack: %s fuse: %s' % (
-                borg_version, python_implementation, python_version, msgpack_version, llfuse_info))
-    info.append('PID: %d  CWD: %s' % (os.getpid(), os.getcwd()))
-    info.append('sys.argv: %r' % sys.argv)
-    info.append('SSH_ORIGINAL_COMMAND: %r' % os.environ.get('SSH_ORIGINAL_COMMAND'))
-    info.append('')
-    return '\n'.join(info)
+        info.append("Linux: %s %s %s" % linux_distribution)
+    info.append(
+        "Borg: {}  Python: {} {} msgpack: {} fuse: {}".format(
+            borg_version, python_implementation, python_version, msgpack_version, llfuse_info
+        )
+    )
+    info.append("PID: %d  CWD: %s" % (os.getpid(), os.getcwd()))
+    info.append("sys.argv: %r" % sys.argv)
+    info.append("SSH_ORIGINAL_COMMAND: %r" % os.environ.get("SSH_ORIGINAL_COMMAND"))
+    info.append("")
+    return "\n".join(info)
 
 
 def log_multi(*msgs, level=logging.INFO, logger=logger):
@@ -133,7 +86,7 @@ class ChunkIteratorFileWrapper:
         """
         self.chunk_iterator = chunk_iterator
         self.chunk_offset = 0
-        self.chunk = b''
+        self.chunk = b""
         self.exhausted = False
         self.read_callback = read_callback
 
@@ -152,11 +105,11 @@ class ChunkIteratorFileWrapper:
 
     def _read(self, nbytes):
         if not nbytes:
-            return b''
+            return b""
         remaining = self._refill()
         will_read = min(remaining, nbytes)
         self.chunk_offset += will_read
-        return self.chunk[self.chunk_offset - will_read:self.chunk_offset]
+        return self.chunk[self.chunk_offset - will_read : self.chunk_offset]
 
     def read(self, nbytes):
         parts = []
@@ -166,12 +119,12 @@ class ChunkIteratorFileWrapper:
             parts.append(read_data)
             if self.read_callback:
                 self.read_callback(read_data)
-        return b''.join(parts)
+        return b"".join(parts)
 
 
 def open_item(archive, item):
     """Return file-like object for archived item (with chunks)."""
-    chunk_iterator = archive.pipeline.fetch_many([c.id for c in item.chunks])
+    chunk_iterator = archive.pipeline.fetch_many([c.id for c in item.chunks], ro_type=ROBJ_FILE_STREAM)
     return ChunkIteratorFileWrapper(chunk_iterator)
 
 
@@ -207,7 +160,7 @@ class ErrorIgnoringTextIOWrapper(io.TextIOWrapper):
                     super().close()
                 except OSError:
                     pass
-        return ''
+        return ""
 
     def write(self, s):
         if not self.closed:
@@ -225,32 +178,14 @@ def iter_separated(fd, sep=None, read_size=4096):
     """Iter over chunks of open file ``fd`` delimited by ``sep``. Doesn't trim."""
     buf = fd.read(read_size)
     is_str = isinstance(buf, str)
-    part = '' if is_str else b''
-    sep = sep or ('\n' if is_str else b'\n')
+    part = "" if is_str else b""
+    sep = sep or ("\n" if is_str else b"\n")
     while len(buf) > 0:
         part2, *items = buf.split(sep)
-        *full, part = (part + part2, *items)
+        *full, part = (part + part2, *items)  # type: ignore
         yield from full
         buf = fd.read(read_size)
     # won't yield an empty part if stream ended with `sep`
     # or if there was no data before EOF
-    if len(part) > 0:
+    if len(part) > 0:  # type: ignore[arg-type]
         yield part
-
-
-def get_tar_filter(fname, decompress):
-    # Note that filter is None if fname is '-'.
-    if fname.endswith(('.tar.gz', '.tgz')):
-        filter = 'gzip -d' if decompress else 'gzip'
-    elif fname.endswith(('.tar.bz2', '.tbz')):
-        filter = 'bzip2 -d' if decompress else 'bzip2'
-    elif fname.endswith(('.tar.xz', '.txz')):
-        filter = 'xz -d' if decompress else 'xz'
-    elif fname.endswith(('.tar.lz4', )):
-        filter = 'lz4 -d' if decompress else 'lz4'
-    elif fname.endswith(('.tar.zstd', )):
-        filter = 'zstd -d' if decompress else 'zstd'
-    else:
-        filter = None
-    logger.debug('Automatically determined tar filter: %s', filter)
-    return filter

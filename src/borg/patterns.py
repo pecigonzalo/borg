@@ -7,8 +7,7 @@ import unicodedata
 from collections import namedtuple
 from enum import Enum
 
-from . import shellpattern
-from .helpers import clean_lines
+from .helpers import clean_lines, shellpattern
 from .helpers.errors import Error
 
 
@@ -75,6 +74,7 @@ class PatternMatcher:
     *fallback* is a boolean value that *match()* returns if no matching patterns are found.
 
     """
+
     def __init__(self, fallback=None):
         self._items = []
 
@@ -96,18 +96,13 @@ class PatternMatcher:
         self.include_patterns = []
 
         # TODO: move this info to parse_inclexcl_command and store in PatternBase subclass?
-        self.is_include_cmd = {
-            IECommand.Exclude: False,
-            IECommand.ExcludeNoRecurse: False,
-            IECommand.Include: True
-        }
+        self.is_include_cmd = {IECommand.Exclude: False, IECommand.ExcludeNoRecurse: False, IECommand.Include: True}
 
     def empty(self):
         return not len(self._items) and not len(self._path_full_patterns)
 
     def _add(self, pattern, cmd):
-        """*cmd* is an IECommand value.
-        """
+        """*cmd* is an IECommand value."""
         if isinstance(pattern, PathFullPattern):
             key = pattern.pattern  # full, normalized path
             self._path_full_patterns[key] = cmd
@@ -123,20 +118,20 @@ class PatternMatcher:
             self._add(pattern, cmd)
 
     def add_includepaths(self, include_paths):
-        """Used to add inclusion-paths from args.paths (from commandline).
-        """
+        """Used to add inclusion-paths from args.paths (from commandline)."""
         include_patterns = [parse_pattern(p, PathPrefixPattern) for p in include_paths]
         self.add(include_patterns, IECommand.Include)
         self.fallback = not include_patterns
         self.include_patterns = include_patterns
 
     def get_unmatched_include_patterns(self):
-        "Note that this only returns patterns added via *add_includepaths*."
-        return [p for p in self.include_patterns if p.match_count == 0]
+        """Note that this only returns patterns added via *add_includepaths* and it
+        won't return PathFullPattern patterns as we do not match_count for them.
+        """
+        return [p for p in self.include_patterns if p.match_count == 0 and not isinstance(p, PathFullPattern)]
 
     def add_inclexcl(self, patterns):
-        """Add list of patterns (of type CmdTuple) to internal list.
-        """
+        """Add list of patterns (of type CmdTuple) to internal list."""
         for pattern, cmd in patterns:
             self._add(pattern, cmd)
 
@@ -158,7 +153,7 @@ class PatternMatcher:
             return self.is_include_cmd[value]
 
         # this is the slow way, if we have many patterns in self._items:
-        for (pattern, cmd) in self._items:
+        for pattern, cmd in self._items:
             if pattern.match(path, normalize=False):
                 self.recurse_dir = pattern.recurse_dir
                 return self.is_include_cmd[cmd]
@@ -172,13 +167,13 @@ def normalize_path(path):
     """normalize paths for MacOS (but do nothing on other platforms)"""
     # HFS+ converts paths to a canonical form, so users shouldn't be required to enter an exact match.
     # Windows and Unix filesystems allow different forms, so users always have to enter an exact match.
-    return unicodedata.normalize('NFD', path) if sys.platform == 'darwin' else path
+    return unicodedata.normalize("NFD", path) if sys.platform == "darwin" else path
 
 
 class PatternBase:
-    """Shared logic for inclusion/exclusion patterns.
-    """
-    PREFIX = NotImplemented
+    """Shared logic for inclusion/exclusion patterns."""
+
+    PREFIX: str = None
 
     def __init__(self, pattern, recurse_dir=False):
         self.pattern_orig = pattern
@@ -201,7 +196,7 @@ class PatternBase:
         return matches
 
     def __repr__(self):
-        return '%s(%s)' % (type(self), self.pattern)
+        return f"{type(self)}({self.pattern})"
 
     def __str__(self):
         return self.pattern_orig
@@ -216,6 +211,7 @@ class PatternBase:
 
 class PathFullPattern(PatternBase):
     """Full match of a path."""
+
     PREFIX = "pf"
 
     def _prepare(self, pattern):
@@ -236,6 +232,7 @@ class PathPrefixPattern(PatternBase):
     If a directory is specified, all paths that start with that
     path match as well.  A trailing slash makes no difference.
     """
+
     PREFIX = "pp"
 
     def _prepare(self, pattern):
@@ -251,13 +248,14 @@ class FnmatchPattern(PatternBase):
     """Shell glob patterns to exclude.  A trailing slash means to
     exclude the contents of a directory, but not the directory itself.
     """
+
     PREFIX = "fm"
 
     def _prepare(self, pattern):
         if pattern.endswith(os.path.sep):
-            pattern = os.path.normpath(pattern).rstrip(os.path.sep) + os.path.sep + '*' + os.path.sep
+            pattern = os.path.normpath(pattern).rstrip(os.path.sep) + os.path.sep + "*" + os.path.sep
         else:
-            pattern = os.path.normpath(pattern) + os.path.sep + '*'
+            pattern = os.path.normpath(pattern) + os.path.sep + "*"
 
         self.pattern = pattern.lstrip(os.path.sep)  # sep at beginning is removed
 
@@ -266,13 +264,14 @@ class FnmatchPattern(PatternBase):
         self.regex = re.compile(fnmatch.translate(self.pattern))
 
     def _match(self, path):
-        return (self.regex.match(path + os.path.sep) is not None)
+        return self.regex.match(path + os.path.sep) is not None
 
 
 class ShellPattern(PatternBase):
     """Shell glob patterns to exclude.  A trailing slash means to
     exclude the contents of a directory, but not the directory itself.
     """
+
     PREFIX = "sh"
 
     def _prepare(self, pattern):
@@ -287,12 +286,12 @@ class ShellPattern(PatternBase):
         self.regex = re.compile(shellpattern.translate(self.pattern))
 
     def _match(self, path):
-        return (self.regex.match(path + os.path.sep) is not None)
+        return self.regex.match(path + os.path.sep) is not None
 
 
 class RegexPattern(PatternBase):
-    """Regular expression to exclude.
-    """
+    """Regular expression to exclude."""
+
     PREFIX = "re"
 
     def _prepare(self, pattern):
@@ -301,28 +300,22 @@ class RegexPattern(PatternBase):
 
     def _match(self, path):
         # Normalize path separators
-        if os.path.sep != '/':
-            path = path.replace(os.path.sep, '/')
+        if os.path.sep != "/":
+            path = path.replace(os.path.sep, "/")
 
-        return (self.regex.search(path) is not None)
+        return self.regex.search(path) is not None
 
 
-_PATTERN_CLASSES = {
-    FnmatchPattern,
-    PathFullPattern,
-    PathPrefixPattern,
-    RegexPattern,
-    ShellPattern,
-}
+_PATTERN_CLASSES = {FnmatchPattern, PathFullPattern, PathPrefixPattern, RegexPattern, ShellPattern}
 
-_PATTERN_CLASS_BY_PREFIX = dict((i.PREFIX, i) for i in _PATTERN_CLASSES)
+_PATTERN_CLASS_BY_PREFIX = {i.PREFIX: i for i in _PATTERN_CLASSES}
 
-CmdTuple = namedtuple('CmdTuple', 'val cmd')
+CmdTuple = namedtuple("CmdTuple", "val cmd")
 
 
 class IECommand(Enum):
-    """A command that an InclExcl file line can represent.
-    """
+    """A command that an InclExcl file line can represent."""
+
     RootPath = 1
     PatternStyle = 2
     Include = 3
@@ -339,13 +332,11 @@ def get_pattern_class(prefix):
     try:
         return _PATTERN_CLASS_BY_PREFIX[prefix]
     except KeyError:
-        raise ValueError("Unknown pattern style: {}".format(prefix)) from None
+        raise ValueError(f"Unknown pattern style: {prefix}") from None
 
 
 def parse_pattern(pattern, fallback=FnmatchPattern, recurse_dir=True):
-    """Read pattern from string and return an instance of the appropriate implementation class.
-
-    """
+    """Read pattern from string and return an instance of the appropriate implementation class."""
     if len(pattern) > 2 and pattern[2] == ":" and pattern[:2].isalnum():
         (style, pattern) = (pattern[:2], pattern[3:])
         cls = get_pattern_class(style)
@@ -355,8 +346,7 @@ def parse_pattern(pattern, fallback=FnmatchPattern, recurse_dir=True):
 
 
 def parse_exclude_pattern(pattern_str, fallback=FnmatchPattern):
-    """Read pattern from string and return an instance of the appropriate implementation class.
-    """
+    """Read pattern from string and return an instance of the appropriate implementation class."""
     epattern_obj = parse_pattern(pattern_str, fallback, recurse_dir=False)
     return CmdTuple(epattern_obj, IECommand.ExcludeNoRecurse)
 
@@ -365,21 +355,20 @@ def parse_inclexcl_command(cmd_line_str, fallback=ShellPattern):
     """Read a --patterns-from command from string and return a CmdTuple object."""
 
     cmd_prefix_map = {
-        '-': IECommand.Exclude,
-        '!': IECommand.ExcludeNoRecurse,
-        '+': IECommand.Include,
-        'R': IECommand.RootPath,
-        'r': IECommand.RootPath,
-        'P': IECommand.PatternStyle,
-        'p': IECommand.PatternStyle,
+        "-": IECommand.Exclude,
+        "!": IECommand.ExcludeNoRecurse,
+        "+": IECommand.Include,
+        "R": IECommand.RootPath,
+        "r": IECommand.RootPath,
+        "P": IECommand.PatternStyle,
+        "p": IECommand.PatternStyle,
     }
     if not cmd_line_str:
         raise argparse.ArgumentTypeError("A pattern/command must not be empty.")
 
     cmd = cmd_prefix_map.get(cmd_line_str[0])
     if cmd is None:
-        raise argparse.ArgumentTypeError("A pattern/command must start with anyone of: %s" %
-                                         ', '.join(cmd_prefix_map))
+        raise argparse.ArgumentTypeError("A pattern/command must start with any of: %s" % ", ".join(cmd_prefix_map))
 
     # remaining text on command-line following the command character
     remainder_str = cmd_line_str[1:].lstrip()
@@ -394,10 +383,33 @@ def parse_inclexcl_command(cmd_line_str, fallback=ShellPattern):
         try:
             val = get_pattern_class(remainder_str)
         except ValueError:
-            raise argparse.ArgumentTypeError("Invalid pattern style: {}".format(remainder_str))
+            raise argparse.ArgumentTypeError(f"Invalid pattern style: {remainder_str}")
     else:
         # determine recurse_dir based on command type
         recurse_dir = command_recurses_dir(cmd)
         val = parse_pattern(remainder_str, fallback, recurse_dir)
 
     return CmdTuple(val, cmd)
+
+
+def get_regex_from_pattern(pattern: str) -> str:
+    """
+    return a regular expression string corresponding to the given pattern string.
+
+    the allowed pattern types are similar to the ones implemented by PatternBase subclasses,
+    but here we rather do generic string matching, not specialised filesystem paths matching.
+    """
+    if len(pattern) > 2 and pattern[2] == ":" and pattern[:2] in {"sh", "re", "id"}:
+        (style, pattern) = (pattern[:2], pattern[3:])
+    else:
+        (style, pattern) = ("id", pattern)  # "identical" match is the default
+    if style == "sh":
+        # (?ms) (meaning re.MULTILINE and re.DOTALL) are not desired here.
+        regex = shellpattern.translate(pattern, match_end="").removeprefix("(?ms)")
+    elif style == "re":
+        regex = pattern
+    elif style == "id":
+        regex = re.escape(pattern)
+    else:
+        raise NotImplementedError
+    return regex

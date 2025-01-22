@@ -27,28 +27,15 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "BORG-DIFF" 1 "2022-02-19" "" "borg backup tool"
+.TH "BORG-DIFF" 1 "2024-11-16" "" "borg backup tool"
 .SH NAME
 borg-diff \- Diff contents of two archives
 .SH SYNOPSIS
 .sp
-borg [common options] diff [options] REPO::ARCHIVE1 ARCHIVE2 [PATH...]
+borg [common options] diff [options] ARCHIVE1 ARCHIVE2 [PATH...]
 .SH DESCRIPTION
 .sp
-This command finds differences (file contents, user/group/mode) between archives.
-.sp
-A repository location and an archive name must be specified for REPO::ARCHIVE1.
-ARCHIVE2 is just another archive name in same repository (no repository location
-allowed).
-.sp
-For archives created with Borg 1.1 or newer diff automatically detects whether
-the archives are created with the same chunker params. If so, only chunk IDs
-are compared, which is very fast.
-.sp
-For archives prior to Borg 1.1 chunk contents are compared by default.
-If you did not create the archives with different chunker params,
-pass \fB\-\-same\-chunker\-params\fP\&.
-Note that the chunker params changed from Borg 0.xx to 1.0.
+This command finds differences (file contents, metadata) between ARCHIVE1 and ARCHIVE2.
 .sp
 For more help on include/exclude patterns, see the \fIborg_patterns\fP command output.
 .SH OPTIONS
@@ -57,20 +44,17 @@ See \fIborg\-common(1)\fP for common options of Borg commands.
 .SS arguments
 .INDENT 0.0
 .TP
-.B REPO::ARCHIVE1
-repository location and ARCHIVE1 name
+.B ARCHIVE1
+ARCHIVE1 name
 .TP
 .B ARCHIVE2
-ARCHIVE2 name (no repository location allowed)
+ARCHIVE2 name
 .TP
 .B PATH
 paths of items inside the archives to compare; patterns are supported
 .UNINDENT
 .SS optional arguments
 .INDENT 0.0
-.TP
-.B  \-\-numeric\-owner
-deprecated, use \fB\-\-numeric\-ids\fP instead
 .TP
 .B  \-\-numeric\-ids
 only consider numeric user and group identifiers
@@ -81,10 +65,16 @@ Override check of chunker parameters.
 .B  \-\-sort
 Sort the output lines by file path.
 .TP
+.BI \-\-format \ FORMAT
+specify format for differences between archives (default: \(dq{change} {path}{NL}\(dq)
+.TP
 .B  \-\-json\-lines
 Format output as JSON Lines.
+.TP
+.B  \-\-content\-only
+Only compare differences in content (exclude metadata differences)
 .UNINDENT
-.SS Exclusion options
+.SS Include/Exclude options
 .INDENT 0.0
 .TP
 .BI \-e \ PATTERN\fR,\fB \ \-\-exclude \ PATTERN
@@ -105,47 +95,100 @@ read include/exclude patterns from PATTERNFILE, one per line
 .sp
 .nf
 .ft C
-$ borg init \-e=none testrepo
-$ mkdir testdir
-$ cd testdir
-$ echo asdf > file1
-$ dd if=/dev/urandom bs=1M count=4 > file2
-$ touch file3
-$ borg create ../testrepo::archive1 .
-
-$ chmod a+x file1
-$ echo "something" >> file2
-$ borg create ../testrepo::archive2 .
-
-$ echo "testing 123" >> file1
-$ rm file3
-$ touch file4
-$ borg create ../testrepo::archive3 .
-
-$ cd ..
-$ borg diff testrepo::archive1 archive2
-[\-rw\-r\-\-r\-\- \-> \-rwxr\-xr\-x] file1
-   +135 B    \-252 B file2
-
-$ borg diff testrepo::archive2 archive3
-    +17 B      \-5 B file1
-added           0 B file4
-removed         0 B file3
-
-$ borg diff testrepo::archive1 archive3
+$ borg diff archive1 archive2
     +17 B      \-5 B [\-rw\-r\-\-r\-\- \-> \-rwxr\-xr\-x] file1
    +135 B    \-252 B file2
 added           0 B file4
 removed         0 B file3
 
-$ borg diff \-\-json\-lines testrepo::archive1 archive3
-{"path": "file1", "changes": [{"type": "modified", "added": 17, "removed": 5}, {"type": "mode", "old_mode": "\-rw\-r\-\-r\-\-", "new_mode": "\-rwxr\-xr\-x"}]}
-{"path": "file2", "changes": [{"type": "modified", "added": 135, "removed": 252}]}
-{"path": "file4", "changes": [{"type": "added", "size": 0}]}
-{"path": "file3", "changes": [{"type": "removed", "size": 0}]
+$ borg diff archive1 archive2
+{\(dqpath\(dq: \(dqfile1\(dq, \(dqchanges\(dq: [{\(dqtype\(dq: \(dqmodified\(dq, \(dqadded\(dq: 17, \(dqremoved\(dq: 5}, {\(dqtype\(dq: \(dqmode\(dq, \(dqold_mode\(dq: \(dq\-rw\-r\-\-r\-\-\(dq, \(dqnew_mode\(dq: \(dq\-rwxr\-xr\-x\(dq}]}
+{\(dqpath\(dq: \(dqfile2\(dq, \(dqchanges\(dq: [{\(dqtype\(dq: \(dqmodified\(dq, \(dqadded\(dq: 135, \(dqremoved\(dq: 252}]}
+{\(dqpath\(dq: \(dqfile4\(dq, \(dqchanges\(dq: [{\(dqtype\(dq: \(dqadded\(dq, \(dqsize\(dq: 0}]}
+{\(dqpath\(dq: \(dqfile3\(dq, \(dqchanges\(dq: [{\(dqtype\(dq: \(dqremoved\(dq, \(dqsize\(dq: 0}]}
 .ft P
 .fi
 .UNINDENT
+.UNINDENT
+.SH NOTES
+.SS The FORMAT specifier syntax
+.sp
+The \fB\-\-format\fP option uses python\(aqs \fI\%format string syntax\fP\&.
+.sp
+Examples:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ borg diff \-\-format \(aq{content:30} {path}{NL}\(aq ArchiveFoo ArchiveBar
+modified:  +4.1 kB  \-1.0 kB    file\-diff
+\&...
+
+# {VAR:<NUMBER} \- pad to NUMBER columns left\-aligned.
+# {VAR:>NUMBER} \- pad to NUMBER columns right\-aligned.
+$ borg diff \-\-format \(aq{content:>30} {path}{NL}\(aq ArchiveFoo ArchiveBar
+   modified:  +4.1 kB  \-1.0 kB file\-diff
+\&...
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+The following keys are always available:
+.INDENT 0.0
+.IP \(bu 2
+NEWLINE: OS dependent line separator
+.IP \(bu 2
+NL: alias of NEWLINE
+.IP \(bu 2
+NUL: NUL character for creating print0 / xargs \-0 like output
+.IP \(bu 2
+SPACE: space character
+.IP \(bu 2
+TAB: tab character
+.IP \(bu 2
+CR: carriage return character
+.IP \(bu 2
+LF: line feed character
+.UNINDENT
+.sp
+Keys available only when showing differences between archives:
+.INDENT 0.0
+.IP \(bu 2
+path: archived file path
+.IP \(bu 2
+change: all available changes
+.IP \(bu 2
+content: file content change
+.IP \(bu 2
+mode: file mode change
+.IP \(bu 2
+type: file type change
+.IP \(bu 2
+owner: file owner (user/group) change
+.IP \(bu 2
+group: file group change
+.IP \(bu 2
+user: file user change
+.IP \(bu 2
+link: file link change
+.IP \(bu 2
+directory: file directory change
+.IP \(bu 2
+blkdev: file block device change
+.IP \(bu 2
+chrdev: file character device change
+.IP \(bu 2
+fifo: file fifo change
+.IP \(bu 2
+mtime: file modification time change
+.IP \(bu 2
+ctime: file change time change
+.IP \(bu 2
+isomtime: file modification time change (ISO 8601)
+.IP \(bu 2
+isoctime: file creation time change (ISO 8601)
 .UNINDENT
 .SH SEE ALSO
 .sp

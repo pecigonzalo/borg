@@ -30,7 +30,7 @@ for block devices (like disks, partitions, LVM LVs) or raw disk image files.
 
 ``--chunker-params=fixed,4096,512`` results in fixed 4kiB sized blocks,
 but the first header block will only be 512B long. This might be useful to
-dedup files with 1 header + N fixed size data blocks. Be careful to not
+dedup files with 1 header + N fixed size data blocks. Be careful not to
 produce a too big amount of chunks (like using small block size for huge
 files).
 
@@ -63,7 +63,7 @@ For more details, see :ref:`chunker_details`.
 ``--noatime / --noctime``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can use these ``borg create`` options to not store the respective timestamp
+You can use these ``borg create`` options not to store the respective timestamp
 into the archive, in case you do not really need it.
 
 Besides saving a little space for the not archived timestamp, it might also
@@ -74,7 +74,7 @@ won't deduplicate just because of that.
 ``--nobsdflags / --noflags``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can use this to not query and store (or not extract and set) flags - in case
+You can use this not to query and store (or not extract and set) flags - in case
 you don't need them or if they are broken somehow for your fs.
 
 On Linux, dealing with the flags needs some additional syscalls. Especially when
@@ -132,7 +132,7 @@ scale and perform better if you do not work via the FUSE mount.
 Example
 +++++++
 
-Imagine you have made some snapshots of logical volumes (LVs) you want to backup.
+Imagine you have made some snapshots of logical volumes (LVs) you want to back up.
 
 .. note::
 
@@ -155,18 +155,18 @@ After the backup has completed, you remove the snapshots again.
 
     $ # create snapshots here
     $ lvdisplay > lvdisplay.txt
-    $ borg create --read-special /path/to/repo::arch lvdisplay.txt /dev/vg0/*-snapshot
+    $ borg create --read-special arch lvdisplay.txt /dev/vg0/*-snapshot
     $ # remove snapshots here
 
 Now, let's see how to restore some LVs from such a backup.
 
 ::
 
-    $ borg extract /path/to/repo::arch lvdisplay.txt
+    $ borg extract arch lvdisplay.txt
     $ # create empty LVs with correct sizes here (look into lvdisplay.txt).
     $ # we assume that you created an empty root and home LV and overwrite it now:
-    $ borg extract --stdout /path/to/repo::arch dev/vg0/root-snapshot > /dev/vg0/root
-    $ borg extract --stdout /path/to/repo::arch dev/vg0/home-snapshot > /dev/vg0/home
+    $ borg extract --stdout arch dev/vg0/root-snapshot > /dev/vg0/root
+    $ borg extract --stdout arch dev/vg0/home-snapshot > /dev/vg0/home
 
 
 .. _separate_compaction:
@@ -175,9 +175,7 @@ Separate compaction
 ~~~~~~~~~~~~~~~~~~~
 
 Borg does not auto-compact the segment files in the repository at commit time
-(at the end of each repository-writing command) any more.
-
-This is new since borg 1.2.0 and requires borg >= 1.2.0 on client and server.
+(at the end of each repository-writing command) any more (since borg 1.2.0).
 
 This causes a similar behaviour of the repository as if it was in append-only
 mode (see below) most of the time (until ``borg compact`` is invoked or an
@@ -219,7 +217,7 @@ To activate append-only mode, set ``append_only`` to 1 in the repository config:
 
 ::
 
-    borg config /path/to/repo append_only 1
+    borg config append_only 1
 
 Note that you can go back-and-forth between normal and append-only operation with
 ``borg config``; it's not a "one way trip."
@@ -236,8 +234,8 @@ in ``.ssh/authorized_keys``:
     command="borg serve --append-only ..." ssh-rsa <key used for not-always-trustable backup clients>
     command="borg serve ..." ssh-rsa <key used for backup management>
 
-Running ``borg init`` via a ``borg serve --append-only`` server will *not* create
-an append-only repository. Running ``borg init --append-only`` creates an append-only
+Running ``borg repo-create`` via a ``borg serve --append-only`` server will *not* create
+an append-only repository. Running ``borg repo-create --append-only`` creates an append-only
 repository regardless of server settings.
 
 Example
@@ -276,13 +274,13 @@ with file 6::
 
 That's all to do in the repository.
 
-If you want to access this rollbacked repository from a client that already has
+If you want to access this rolled back repository from a client that already has
 a cache for this repository, the cache will reflect a newer repository state
 than what you actually have in the repository now, after the rollback.
 
 Thus, you need to clear the cache::
 
-    borg delete --cache-only repo
+    borg repo-delete --cache-only
 
 The cache will get rebuilt automatically. Depending on repo size and archive
 count, it may take a while.
@@ -307,10 +305,10 @@ mode, this is reversible, but ``borg check`` should be run before a writing/prun
 operation on an append-only repository to catch accidental or malicious corruption::
 
     # run without append-only mode
-    borg check --verify-data repo && borg compact repo
+    borg check --verify-data && borg compact
 
-Aside from checking repository & archive integrity you may want to also manually check
-backups to ensure their content seems correct.
+Aside from checking repository & archive integrity you may also want to check
+backups manually to ensure their content seems correct.
 
 Further considerations
 ++++++++++++++++++++++
@@ -333,3 +331,4 @@ When running Borg using an automated script, ``ssh`` might still ask for a passw
 even if there is an SSH key for the target server. Use this to make scripts more robust::
 
     export BORG_RSH='ssh -oBatchMode=yes'
+

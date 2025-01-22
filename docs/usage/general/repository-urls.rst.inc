@@ -14,30 +14,21 @@ Note: you may also prepend a ``file://`` to a filesystem path to get URL style.
 
 **Remote repositories** accessed via ssh user@host:
 
-``user@host:/path/to/repo`` - remote repo, absolute path
+``ssh://user@host:port//abs/path/to/repo`` - absolute path
 
-``ssh://user@host:port/path/to/repo`` - same, alternative syntax, port can be given
+``ssh://user@host:port/rel/path/to/repo`` - path relative to current directory
 
+**Remote repositories** accessed via sftp:
 
-**Remote repositories with relative paths** can be given using this syntax:
+``sftp://user@host:port//abs/path/to/repo`` - absolute path
 
-``user@host:path/to/repo`` - path relative to current directory
+``sftp://user@host:port/rel/path/to/repo`` - path relative to current directory
 
-``user@host:~/path/to/repo`` - path relative to user's home directory
+For ssh and sftp URLs, the ``user@`` and ``:port`` parts are optional.
 
-``user@host:~other/path/to/repo`` - path relative to other's home directory
+**Remote repositories** accessed via rclone:
 
-Note: giving ``user@host:/./path/to/repo`` or ``user@host:/~/path/to/repo`` or
-``user@host:/~other/path/to/repo`` is also supported, but not required here.
-
-
-**Remote repositories with relative paths, alternative syntax with port**:
-
-``ssh://user@host:port/./path/to/repo`` - path relative to current directory
-
-``ssh://user@host:port/~/path/to/repo`` - path relative to user's home directory
-
-``ssh://user@host:port/~other/path/to/repo`` - path relative to other's home directory
+``rclone:remote:path`` - see the rclone docs for more details about remote:path.
 
 
 If you frequently need the same repo URL, it is a good idea to set the
@@ -45,10 +36,7 @@ If you frequently need the same repo URL, it is a good idea to set the
 
 ::
 
-    export BORG_REPO='ssh://user@host:port/path/to/repo'
+    export BORG_REPO='ssh://user@host:port/rel/path/to/repo'
 
-Then just leave away the repo URL if only a repo URL is needed and you want
+Then just leave away the ``--repo`` option if you want
 to use the default - it will be read from BORG_REPO then.
-
-Use ``::`` syntax to give the repo URL when syntax requires giving a positional
-argument for the repo (e.g. ``borg mount :: /mnt``).

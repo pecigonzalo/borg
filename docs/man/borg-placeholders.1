@@ -27,12 +27,12 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "BORG-PLACEHOLDERS" 1 "2022-02-19" "" "borg backup tool"
+.TH "BORG-PLACEHOLDERS" 1 "2024-11-16" "" "borg backup tool"
 .SH NAME
 borg-placeholders \- Details regarding placeholders
 .SH DESCRIPTION
 .sp
-Repository (or Archive) URLs, \fB\-\-prefix\fP, \fB\-\-glob\-archives\fP, \fB\-\-comment\fP
+Repository URLs, \fB\-\-name\fP, \fB\-a\fP / \fB\-\-match\-archives\fP, \fB\-\-comment\fP
 and \fB\-\-remote\-path\fP values support these placeholders:
 .INDENT 0.0
 .TP
@@ -91,8 +91,8 @@ Examples:
 .nf
 .ft C
 borg create /path/to/repo::{hostname}\-{user}\-{utcnow} ...
-borg create /path/to/repo::{hostname}\-{now:%Y\-%m\-%d_%H:%M:%S} ...
-borg prune \-\-prefix \(aq{hostname}\-\(aq ...
+borg create /path/to/repo::{hostname}\-{now:%Y\-%m\-%d_%H:%M:%S%z} ...
+borg prune \-a \(aqsh:{hostname}\-*\(aq ...
 .ft P
 .fi
 .UNINDENT

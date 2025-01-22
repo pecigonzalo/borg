@@ -6,61 +6,61 @@ borg mount
 ----------
 .. code-block:: none
 
-    borg [common options] mount [options] REPOSITORY_OR_ARCHIVE MOUNTPOINT [PATH...]
+    borg [common options] mount [options] MOUNTPOINT [PATH...]
 
 .. only:: html
 
     .. class:: borg-options-table
 
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    | **positional arguments**                                                                                                                                                                                                                                                     |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``REPOSITORY_OR_ARCHIVE``             | repository or archive to mount                                                                                                                         |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``MOUNTPOINT``                        | where to mount filesystem                                                                                                                              |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``PATH``                              | paths to extract; patterns are supported                                                                                                               |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    | **optional arguments**                                                                                                                                                                                                                                                       |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--consider-checkpoints``            | Show checkpoint archives in the repository contents list (default: hidden).                                                                            |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``-f``, ``--foreground``              | stay in foreground, do not daemonize                                                                                                                   |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``-o``                                | Extra mount options                                                                                                                                    |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--numeric-owner``                   | deprecated, use ``--numeric-ids`` instead                                                                                                              |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--numeric-ids``                     | use numeric user and group identifiers from archive(s)                                                                                                 |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    | .. class:: borg-common-opt-ref                                                                                                                                                                                                                                               |
-    |                                                                                                                                                                                                                                                                              |
-    | :ref:`common_options`                                                                                                                                                                                                                                                        |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    | **Archive filters** — Archive filters can be applied to repository targets.                                                                                                                                                                                                  |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``-P PREFIX``, ``--prefix PREFIX``    | only consider archive names starting with this prefix.                                                                                                 |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``-a GLOB``, ``--glob-archives GLOB`` | only consider archive names matching the glob. sh: rules apply, see "borg help patterns". ``--prefix`` and ``--glob-archives`` are mutually exclusive. |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--sort-by KEYS``                    | Comma-separated list of sorting keys; valid keys are: timestamp, name, id; default is: timestamp                                                       |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--first N``                         | consider first N archives after other filters were applied                                                                                             |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--last N``                          | consider last N archives after other filters were applied                                                                                              |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    | **Exclusion options**                                                                                                                                                                                                                                                        |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``-e PATTERN``, ``--exclude PATTERN`` | exclude paths matching PATTERN                                                                                                                         |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--exclude-from EXCLUDEFILE``        | read exclude patterns from EXCLUDEFILE, one per line                                                                                                   |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--pattern PATTERN``                 | include/exclude paths matching PATTERN                                                                                                                 |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--patterns-from PATTERNFILE``       | read include/exclude patterns from PATTERNFILE, one per line                                                                                           |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-    |                                                                             | ``--strip-components NUMBER``         | Remove the specified number of leading path elements. Paths with fewer elements will be silently skipped.                                              |
-    +-----------------------------------------------------------------------------+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | **positional arguments**                                                                                                                                                                                                                                 |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``MOUNTPOINT``                               | where to mount filesystem                                                                                                   |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``PATH``                                     | paths to extract; patterns are supported                                                                                    |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | **optional arguments**                                                                                                                                                                                                                                   |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``-f``, ``--foreground``                     | stay in foreground, do not daemonize                                                                                        |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``-o``                                       | Extra mount options                                                                                                         |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--numeric-ids``                            | use numeric user and group identifiers from archive(s)                                                                      |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | .. class:: borg-common-opt-ref                                                                                                                                                                                                                           |
+    |                                                                                                                                                                                                                                                          |
+    | :ref:`common_options`                                                                                                                                                                                                                                    |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | **Archive filters** — Archive filters can be applied to repository targets.                                                                                                                                                                              |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``-a PATTERN``, ``--match-archives PATTERN`` | only consider archives matching all patterns. see "borg help match-archives".                                               |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--sort-by KEYS``                           | Comma-separated list of sorting keys; valid keys are: timestamp, archive, name, id, tags, host, user; default is: timestamp |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--first N``                                | consider first N archives after other filters were applied                                                                  |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--last N``                                 | consider last N archives after other filters were applied                                                                   |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--oldest TIMESPAN``                        | consider archives between the oldest archive's timestamp and (oldest + TIMESPAN), e.g. 7d or 12m.                           |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--newest TIMESPAN``                        | consider archives between the newest archive's timestamp and (newest - TIMESPAN), e.g. 7d or 12m.                           |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--older TIMESPAN``                         | consider archives older than (now - TIMESPAN), e.g. 7d or 12m.                                                              |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--newer TIMESPAN``                         | consider archives newer than (now - TIMESPAN), e.g. 7d or 12m.                                                              |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | **Include/Exclude options**                                                                                                                                                                                                                              |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``-e PATTERN``, ``--exclude PATTERN``        | exclude paths matching PATTERN                                                                                              |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--exclude-from EXCLUDEFILE``               | read exclude patterns from EXCLUDEFILE, one per line                                                                        |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--pattern PATTERN``                        | include/exclude paths matching PATTERN                                                                                      |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--patterns-from PATTERNFILE``              | read include/exclude patterns from PATTERNFILE, one per line                                                                |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    |                                                                             | ``--strip-components NUMBER``                | Remove the specified number of leading path elements. Paths with fewer elements will be silently skipped.                   |
+    +-----------------------------------------------------------------------------+----------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
 
     .. raw:: html
 
@@ -72,8 +72,6 @@ borg mount
 
 .. only:: latex
 
-    REPOSITORY_OR_ARCHIVE
-        repository or archive to mount
     MOUNTPOINT
         where to mount filesystem
     PATH
@@ -81,10 +79,8 @@ borg mount
 
 
     optional arguments
-        --consider-checkpoints    Show checkpoint archives in the repository contents list (default: hidden).
         -f, --foreground    stay in foreground, do not daemonize
         -o     Extra mount options
-        --numeric-owner    deprecated, use ``--numeric-ids`` instead
         --numeric-ids    use numeric user and group identifiers from archive(s)
 
 
@@ -92,14 +88,17 @@ borg mount
         |
 
     Archive filters
-        -P PREFIX, --prefix PREFIX        only consider archive names starting with this prefix.
-        -a GLOB, --glob-archives GLOB     only consider archive names matching the glob. sh: rules apply, see "borg help patterns". ``--prefix`` and ``--glob-archives`` are mutually exclusive.
-        --sort-by KEYS                    Comma-separated list of sorting keys; valid keys are: timestamp, name, id; default is: timestamp
-        --first N                         consider first N archives after other filters were applied
-        --last N                          consider last N archives after other filters were applied
+        -a PATTERN, --match-archives PATTERN     only consider archives matching all patterns. see "borg help match-archives".
+        --sort-by KEYS                           Comma-separated list of sorting keys; valid keys are: timestamp, archive, name, id, tags, host, user; default is: timestamp
+        --first N                                consider first N archives after other filters were applied
+        --last N                                 consider last N archives after other filters were applied
+        --oldest TIMESPAN                        consider archives between the oldest archive's timestamp and (oldest + TIMESPAN), e.g. 7d or 12m.
+        --newest TIMESPAN                        consider archives between the newest archive's timestamp and (newest - TIMESPAN), e.g. 7d or 12m.
+        --older TIMESPAN                         consider archives older than (now - TIMESPAN), e.g. 7d or 12m.
+        --newer TIMESPAN                         consider archives newer than (now - TIMESPAN), e.g. 7d or 12m.
 
 
-    Exclusion options
+    Include/Exclude options
         -e PATTERN, --exclude PATTERN     exclude paths matching PATTERN
         --exclude-from EXCLUDEFILE        read exclude patterns from EXCLUDEFILE, one per line
         --pattern PATTERN                 include/exclude paths matching PATTERN
@@ -110,10 +109,25 @@ borg mount
 Description
 ~~~~~~~~~~~
 
-This command mounts an archive as a FUSE filesystem. This can be useful for
-browsing an archive or restoring individual files. Unless the ``--foreground``
-option is given the command will run in the background until the filesystem
-is ``umounted``.
+This command mounts a repository or an archive as a FUSE filesystem.
+This can be useful for browsing or restoring individual files.
+
+When restoring, take into account that the current FUSE implementation does
+not support special fs flags and ACLs.
+
+When mounting a repository, the top directories will be named like the
+archives and the directory structure below these will be loaded on-demand from
+the repository when entering these directories, so expect some delay.
+
+Unless the ``--foreground`` option is given the command will run in the
+background until the filesystem is ``umounted``.
+
+Performance tips:
+
+- when doing a "whole repository" mount:
+  do not enter archive dirs if not needed, this avoids on-demand loading.
+- only mount a specific archive, not the whole repository.
+- only mount specific paths in a specific archive, not the complete archive.
 
 The command ``borgfs`` provides a wrapper for ``borg mount``. This can also be
 used in fstab entries:
@@ -143,14 +157,14 @@ manually. Unlike the ``uid`` and ``gid`` mount options which affect all files,
 
 Additional mount options supported by borg:
 
-- versions: when used with a repository mount, this gives a merged, versioned
+- ``versions``: when used with a repository mount, this gives a merged, versioned
   view of the files in the archives. EXPERIMENTAL, layout may change in future.
-- allow_damaged_files: by default damaged files (where missing chunks were
-  replaced with runs of zeros by borg check ``--repair``) are not readable and
+- ``allow_damaged_files``: by default damaged files (where missing chunks were
+  replaced with runs of zeros by ``borg check --repair``) are not readable and
   return EIO (I/O error). Set this option to read such files.
-- ignore_permissions: for security reasons the "default_permissions" mount
-  option is internally enforced by borg. "ignore_permissions" can be given to
-  not enforce "default_permissions".
+- ``ignore_permissions``: for security reasons the ``default_permissions`` mount
+  option is internally enforced by borg. ``ignore_permissions`` can be given to
+  not enforce ``default_permissions``.
 
 The BORG_MOUNT_DATA_CACHE_ENTRIES environment variable is meant for advanced users
 to tweak the performance. It sets the number of cached data chunks; additional
@@ -159,7 +173,7 @@ of CPU cores.
 
 When the daemonized process receives a signal or crashes, it does not unmount.
 Unmounting in these cases could cause an active rsync or similar process
-to unintentionally delete data.
+to delete data unintentionally.
 
-When running in the foreground ^C/SIGINT unmounts cleanly, but other
-signals or crashes do not.
+When running in the foreground, ^C/SIGINT cleanly unmounts the filesystem,
+but other signals or crashes do not.

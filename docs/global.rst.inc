@@ -10,12 +10,13 @@
 .. _HMAC-SHA256: https://en.wikipedia.org/wiki/HMAC
 .. _SHA256: https://en.wikipedia.org/wiki/SHA-256
 .. _PBKDF2: https://en.wikipedia.org/wiki/PBKDF2
+.. _argon2: https://en.wikipedia.org/wiki/Argon2
 .. _ACL: https://en.wikipedia.org/wiki/Access_control_list
 .. _libacl: https://savannah.nongnu.org/projects/acl/
 .. _libattr: https://savannah.nongnu.org/projects/attr/
+.. _libxxhash: https://github.com/Cyan4973/xxHash
 .. _liblz4: https://github.com/Cyan4973/lz4
 .. _libzstd: https://github.com/facebook/zstd
-.. _libb2: https://github.com/BLAKE2/libb2
 .. _OpenSSL: https://www.openssl.org/
 .. _`Python 3`: https://www.python.org/
 .. _Buzhash: https://en.wikipedia.org/wiki/Buzhash

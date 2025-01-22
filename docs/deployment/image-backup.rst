@@ -8,6 +8,41 @@ Backing up disk images can still be efficient with Borg because its `deduplicati
 technique makes sure only the modified parts of the file are stored. Borg also has
 optional simple sparse file support for extract.
 
+It is of utmost importancy to pin down the disk you want to backup.
+You need to use the SERIAL for that.
+Use:
+
+.. code-block:: bash
+
+    # You can find the short disk serial by:
+    # udevadm info --query=property --name=nvme1n1 | grep ID_SERIAL_SHORT | cut -d '=' -f 2
+    export BORG_REPO=/path/to/repo
+    DISK_SERIAL="7VS0224F"
+    DISK_ID=$(readlink -f /dev/disk/by-id/*"${DISK_SERIAL}") # Returns /dev/nvme1n1
+
+    mapfile -t PARTITIONS < <(lsblk -o NAME,TYPE -p -n -l "$DISK_ID" | awk '$2 == "part" {print $1}')
+    echo "Partitions of $DISK_ID:"
+    echo "${PARTITIONS[@]}"
+    echo "Disk Identifier: $DISK_ID"
+
+    # Use the following line to perform a borg backup for the full disk:
+    # borg create --read-special disk-backup "$DISK_ID"
+
+    # Use the following to perform a borg backup for all partitions of the disk
+    # borg create --read-special partitions-backup "${PARTITIONS[@]}"
+
+    # Example output:
+    # Partitions of /dev/nvme1n1:
+    # /dev/nvme1n1p1
+    # /dev/nvme1n1p2
+    # /dev/nvme1n1p3
+    # Disk Identifier: /dev/nvme1n1
+    # borg create --read-special disk-backup /dev/nvme1n1
+    # borg create --read-special partitions-backup /dev/nvme1n1p1 /dev/nvme1n1p2 /dev/nvme1n1p3
+
+
+
+
 Decreasing the size of image backups
 ------------------------------------
 
@@ -33,7 +68,7 @@ deduplicating. For backup, save the disk header and the contents of each partiti
         PARTNUM=$(echo $x | grep -Eo "[0-9]+$")
         ntfsclone -so - $x | borg create repo::hostname-part$PARTNUM -
     done
-    # to backup non-NTFS partitions as well:
+    # to back up non-NTFS partitions as well:
     echo "$PARTITIONS" | grep -v NTFS | cut -d' ' -f1 | while read x; do
         PARTNUM=$(echo $x | grep -Eo "[0-9]+$")
         borg create --read-special repo::hostname-part$PARTNUM $x
@@ -77,7 +112,7 @@ Because the partitions were zeroed in place, restoration is only one command::
     borg extract --stdout repo::hostname-disk | dd of=$DISK
 
 .. note:: The "traditional" way to zero out space on a partition, especially one already
-          mounted, is to simply ``dd`` from ``/dev/zero`` to a temporary file and delete
+          mounted, is simply to ``dd`` from ``/dev/zero`` to a temporary file and delete
           it. This is ill-advised for the reasons mentioned in the ``zerofree`` man page:
 
           - it is slow

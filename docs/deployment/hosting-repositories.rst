@@ -5,7 +5,7 @@
 Hosting repositories
 ====================
 
-This sections shows how to securely provide repository storage for users.
+This sections shows how to provide repository storage securely for users.
 Optionally, each user can have a storage quota.
 
 Repositories are accessed through SSH. Each user of the service should
@@ -24,7 +24,7 @@ is assigned a home directory and repositories of the user reside in her
 home directory.
 
 The following ``~user/.ssh/authorized_keys`` file is the most important
-piece for a correct deployment. It allows the user to login via
+piece for a correct deployment. It allows the user to log in via
 their public key (which must be provided by the user), and restricts
 SSH access to safe operations only.
 
@@ -37,11 +37,11 @@ SSH access to safe operations only.
 
 .. warning::
 
-	If this file should be automatically updated (e.g. by a web console),
-	pay **utmost attention** to sanitizing user input. Strip all whitespace
-	around the user-supplied key, ensure that it **only** contains ASCII
-	with no control characters and that it consists of three parts separated
-	by a single space. Ensure that no newlines are contained within the key.
+    If this file should be automatically updated (e.g. by a web console),
+    pay **utmost attention** to sanitizing user input. Strip all whitespace
+    around the user-supplied key, ensure that it **only** contains ASCII
+    with no control characters and that it consists of three parts separated
+    by a single space. Ensure that no newlines are contained within the key.
 
 The ``restrict`` keyword enables all restrictions, i.e. disables port, agent
 and X11 forwarding, as well as disabling PTY allocation and execution of ~/.ssh/rc.
@@ -59,7 +59,7 @@ which allows for encryption.
 **Storage quotas** can be enabled by adding the ``--storage-quota`` option
 to the ``borg serve`` command line::
 
-	restrict,command="borg serve --storage-quota 20G ..." ...
+    restrict,command="borg serve --storage-quota 20G ..." ...
 
 The storage quotas of repositories are completely independent. If a
 client is able to access multiple repositories, each repository
@@ -67,8 +67,6 @@ can be filled to the specified quota.
 
 If storage quotas are used, ensure that all deployed Borg releases
 support storage quotas.
-
-Refer to :ref:`internals_storage_quota` for more details on storage quotas.
 
 **Specificities: Append-only repositories**
 

@@ -27,12 +27,12 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "BORG-IMPORT-TAR" 1 "2022-02-19" "" "borg backup tool"
+.TH "BORG-IMPORT-TAR" 1 "2024-11-16" "" "borg backup tool"
 .SH NAME
 borg-import-tar \- Create a backup archive from a tarball
 .SH SYNOPSIS
 .sp
-borg [common options] import\-tar [options] ARCHIVE TARFILE
+borg [common options] import\-tar [options] NAME TARFILE
 .SH DESCRIPTION
 .sp
 This command creates a backup archive from a tarball.
@@ -49,7 +49,7 @@ based on its file extension and pipe the file through an appropriate filter:
 .IP \(bu 2
 \&.tar.xz or .txz: xz \-d
 .IP \(bu 2
-\&.tar.zstd: zstd \-d
+\&.tar.zstd or .tar.zst: zstd \-d
 .IP \(bu 2
 \&.tar.lz4: lz4 \-d
 .UNINDENT
@@ -61,26 +61,40 @@ stdout.
 Most documentation of borg create applies. Note that this command does not
 support excluding files.
 .sp
-import\-tar is a lossy conversion:
-BSD flags, ACLs, extended attributes (xattrs), atime and ctime are not exported.
-Timestamp resolution is limited to whole seconds, not the nanosecond resolution
-otherwise supported by Borg.
-.sp
 A \fB\-\-sparse\fP option (as found in borg create) is not supported.
 .sp
-import\-tar reads POSIX.1\-1988 (ustar), POSIX.1\-2001 (pax), GNU tar, UNIX V7 tar
-and SunOS tar with extended attributes.
+About tar formats and metadata conservation or loss, please see \fBborg export\-tar\fP\&.
+.sp
+import\-tar reads these tar formats:
+.INDENT 0.0
+.IP \(bu 2
+BORG: borg specific (PAX\-based)
+.IP \(bu 2
+PAX: POSIX.1\-2001
+.IP \(bu 2
+GNU: GNU tar
+.IP \(bu 2
+POSIX.1\-1988 (ustar)
+.IP \(bu 2
+UNIX V7 tar
+.IP \(bu 2
+SunOS tar with extended attributes
+.UNINDENT
+.sp
+To import multiple tarballs into a single archive, they can be simply
+concatenated (e.g. using \(dqcat\(dq) into a single file, and imported with an
+\fB\-\-ignore\-zeros\fP option to skip through the stop markers between them.
 .SH OPTIONS
 .sp
 See \fIborg\-common(1)\fP for common options of Borg commands.
 .SS arguments
 .INDENT 0.0
 .TP
-.B ARCHIVE
-name of archive to create (must be also a valid directory name)
+.B NAME
+specify the archive name
 .TP
 .B TARFILE
-input tar file. "\-" to read from stdin instead.
+input tar file. \(dq\-\(dq to read from stdin instead.
 .UNINDENT
 .SS optional arguments
 .INDENT 0.0
@@ -99,6 +113,9 @@ only display items with the given status characters
 .TP
 .B  \-\-json
 output stats as JSON (implies \-\-stats)
+.TP
+.B  \-\-ignore\-zeros
+ignore zero\-filled blocks in the input tarball
 .UNINDENT
 .SS Archive options
 .INDENT 0.0
@@ -107,16 +124,87 @@ output stats as JSON (implies \-\-stats)
 add a comment text to the archive
 .TP
 .BI \-\-timestamp \ TIMESTAMP
-manually specify the archive creation date/time (UTC, yyyy\-mm\-ddThh:mm:ss format). alternatively, give a reference file/directory.
-.TP
-.BI \-c \ SECONDS\fR,\fB \ \-\-checkpoint\-interval \ SECONDS
-write checkpoint every SECONDS seconds (Default: 1800)
+manually specify the archive creation date/time (yyyy\-mm\-ddThh:mm:ss[(+|\-)HH:MM] format, (+|\-)HH:MM is the UTC offset, default: local time zone). Alternatively, give a reference file/directory.
 .TP
 .BI \-\-chunker\-params \ PARAMS
 specify the chunker parameters (ALGO, CHUNK_MIN_EXP, CHUNK_MAX_EXP, HASH_MASK_BITS, HASH_WINDOW_SIZE). default: buzhash,19,23,21,4095
 .TP
 .BI \-C \ COMPRESSION\fR,\fB \ \-\-compression \ COMPRESSION
-select compression algorithm, see the output of the "borg help compression" command for details.
+select compression algorithm, see the output of the \(dqborg help compression\(dq command for details.
+.UNINDENT
+.SH EXAMPLES
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+# export as uncompressed tar
+$ borg export\-tar Monday Monday.tar
+
+# import an uncompressed tar
+$ borg import\-tar Monday Monday.tar
+
+# exclude some file types, compress using gzip
+$ borg export\-tar Monday Monday.tar.gz \-\-exclude \(aq*.so\(aq
+
+# use higher compression level with gzip
+$ borg export\-tar \-\-tar\-filter=\(dqgzip \-9\(dq Monday Monday.tar.gz
+
+# copy an archive from repoA to repoB
+$ borg \-r repoA export\-tar \-\-tar\-format=BORG archive \- | borg \-r repoB import\-tar archive \-
+
+# export a tar, but instead of storing it on disk, upload it to remote site using curl
+$ borg export\-tar Monday \- | curl \-\-data\-binary @\- https://somewhere/to/POST
+
+# remote extraction via \(dqtarpipe\(dq
+$ borg export\-tar Monday \- | ssh somewhere \(dqcd extracted; tar x\(dq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS Archives transfer script
+.sp
+Outputs a script that copies all archives from repo1 to repo2:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+for N I T in \(gaborg list \-\-format=\(aq{archive} {id} {time:%Y\-%m\-%dT%H:%M:%S}{NL}\(aq\(ga
+do
+  echo \(dqborg \-r repo1 export\-tar \-\-tar\-format=BORG aid:$I \- | borg \-r repo2 import\-tar \-\-timestamp=$T $N \-\(dq
+done
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Kept:
+.INDENT 0.0
+.IP \(bu 2
+archive name, archive timestamp
+.IP \(bu 2
+archive contents (all items with metadata and data)
+.UNINDENT
+.sp
+Lost:
+.INDENT 0.0
+.IP \(bu 2
+some archive metadata (like the original commandline, execution time, etc.)
+.UNINDENT
+.sp
+Please note:
+.INDENT 0.0
+.IP \(bu 2
+all data goes over that pipe, again and again for every archive
+.IP \(bu 2
+the pipe is dumb, there is no data or transfer time reduction there due to deduplication
+.IP \(bu 2
+maybe add compression
+.IP \(bu 2
+pipe over ssh for remote transfer
+.IP \(bu 2
+no special sparse file support
 .UNINDENT
 .SH SEE ALSO
 .sp

@@ -53,7 +53,7 @@ requests (if you don't have GitHub or don't want to use it you can
 send smaller patches via the borgbackup mailing list to the maintainers).
 
 Stable releases are maintained on maintenance branches named ``x.y-maint``, eg.
-the maintenance branch of the 1.0.x series is ``1.0-maint``.
+the maintenance branch of the 1.2.x series is ``1.2-maint``.
 
 Most PRs should be filed against the ``master`` branch. Only if an
 issue affects **only** a particular maintenance branch a PR should be
@@ -110,6 +110,100 @@ most minor changes and fixes where committed to a maintenance branch
 back into the main development branch. This became more and more
 troublesome due to merges growing more conflict-heavy and error-prone.
 
+How to submit a pull request
+----------------------------
+
+In order to contribute to Borg, you will need to fork the ``borgbackup/borg``
+main repository to your own Github repository. Then clone your Github repository
+to your local machine. The instructions for forking and cloning a repository
+can be found there:
+`<https://docs.github.com/en/get-started/quickstart/fork-a-repo>`_ .
+
+To work on your contribution, you first need to decide which branch your pull
+request should be against. Often, this might be master branch (esp. for big /
+risky contributions), but it could be also a maintenance branch like e.g.
+1.4-maint (esp. for small fixes that should go into next maintenance release,
+e.g. 1.4.x).
+
+Start by checking out the appropriate branch:
+::
+
+    git checkout master
+
+It is best practice for a developer to keep local ``master`` branch as an
+uptodate copy of the upstream ``master`` branch and always do own work in a
+separate feature or bugfix branch.
+This is useful to be able to rebase own branches onto the upstream branches
+they were branched from, if necessary.
+
+This also applies to other upstream branches (like e.g. ``1.4-maint``), not
+only to ``master``.
+
+Thus, create a new branch now:
+::
+
+    git checkout -b MYCONTRIB-master  # choose an appropriate own branch name
+
+Now, work on your contribution in that branch. Use these git commands:
+::
+
+    git status   # is there anything that needs to be added?
+    git add ...  # if so, add it
+    git commit   # finally, commit it. use a descriptive comment.
+
+Then push the changes to your Github repository:
+::
+
+    git push --set-upstream origin MYCONTRIB-master
+
+Finally, make a pull request on ``borgbackup/borg`` Github repository against
+the appropriate branch (e.g. ``master``) so that your changes can be reviewed.
+
+What to do if work was accidentally started in wrong branch
+-----------------------------------------------------------
+
+If you accidentally worked in ``master`` branch, check out the ``master``
+branch and make sure there are no uncommitted changes. Then, create a feature
+branch from that, so that your contribution is in a feature branch.
+::
+
+    git checkout master
+    git checkout -b MYCONTRIB-master
+
+Next, check out the ``master`` branch again. Find the commit hash of the last
+commit that was made before you started working on your contribution and perform
+a hard reset.
+::
+
+    git checkout master
+    git log
+    git reset --hard THATHASH
+
+Then, update the local ``master`` branch with changes made in the upstream
+repository.
+::
+
+    git pull borg master
+
+Rebase feature branch onto updated master branch
+------------------------------------------------
+
+After updating the local ``master`` branch from upstream, the feature branch
+can be checked out and rebased onto (the now uptodate) ``master`` branch.
+::
+
+    git checkout MYCONTRIB-master
+    git rebase -i master
+
+Next, check if there are any commits that exist in the feature branch
+but not in the ``master`` branch and vice versa. If there are no
+conflicts or after resolving them, push your changes to your Github repository.
+::
+
+    git log
+    git diff master
+    git push -f
+
 Code and issues
 ---------------
 
@@ -119,24 +213,36 @@ Code is stored on GitHub, in the `Borgbackup organization
 <https://github.com/borgbackup/borg/pulls>`_ should be sent there as
 well. See also the :ref:`support` section for more details.
 
-Style guide
------------
+Style guide / Automated Code Formatting
+---------------------------------------
 
-We generally follow `pep8
-<https://www.python.org/dev/peps/pep-0008/>`_, with 120 columns
-instead of 79. We do *not* use form-feed (``^L``) characters to
-separate sections either. Compliance is tested automatically when
-you run the tests.
+We use `black`_ for automatically formatting the code.
+
+If you work on the code, it is recommended that you run black **before each commit**
+(so that new code is always using the desired formatting and no additional commits
+are required to fix the formatting).
+
+::
+
+    pip install -r requirements.d/codestyle.txt     # everybody use same black version
+    black --check .                                 # only check, don't change
+    black .                                         # reformat the code
+
+
+The CI workflows will check the code formatting and will fail if it is not formatted correctly.
+
+When (mass-)reformatting existing code, we need to avoid ruining `git blame`, so please
+follow their `guide about avoiding ruining git blame`_:
+
+.. _black: https://black.readthedocs.io/
+.. _guide about avoiding ruining git blame: https://black.readthedocs.io/en/stable/guides/introducing_black_to_your_project.html#avoiding-ruining-git-blame
 
 Continuous Integration
 ----------------------
 
-All pull requests go through `GitHub Actions`_, which runs the tests on Linux
-and Mac OS X as well as the flake8 style checker. Windows builds run on AppVeyor_,
-while additional Unix-like platforms are tested on Golem_.
+All pull requests go through `GitHub Actions`_, which runs the tests on misc.
+Python versions and on misc. platforms as well as some additional checks.
 
-.. _AppVeyor: https://ci.appveyor.com/project/borgbackup/borg/
-.. _Golem: https://golem.enkore.de/view/Borg/
 .. _GitHub Actions: https://github.com/borgbackup/borg/actions
 
 Output and Logging
@@ -164,6 +270,13 @@ virtual env and run::
   pip install -r requirements.d/development.txt
 
 
+This project utilizes pre-commit to format and lint code before it is committed.
+Although pre-commit is installed when running the command above, the pre-commit hooks
+will have to be installed separately. Run this command to install the pre-commit hooks::
+
+  pre-commit install
+
+
 Running the tests
 -----------------
 
@@ -182,7 +295,7 @@ Some more advanced examples::
   # verify a changed tox.ini (run this after any change to tox.ini):
   fakeroot -u tox --recreate
 
-  fakeroot -u tox -e py38  # run all tests, but only on python 3.8
+  fakeroot -u tox -e py39  # run all tests, but only on python 3.9
 
   fakeroot -u tox borg.testsuite.locking  # only run 1 test module
 
@@ -195,24 +308,23 @@ Important notes:
 - When using ``--`` to give options to py.test, you MUST also give ``borg.testsuite[.module]``.
 
 
-Running more checks using coala
--------------------------------
+Running the tests (using the pypi package)
+------------------------------------------
 
-First install coala and some checkers ("bears"):
+Since borg 1.4, it is also possible to run the tests without a development
+environment, using the borgbackup dist package (downloaded from pypi.org or
+github releases page)::
 
-::
+    # optional: create and use a virtual env:
+    python3 -m venv env
+    . env/bin/activate
 
-  pip install -r requirements.d/coala.txt
+    # install packages
+    pip install borgbackup
+    pip install pytest pytest-benchmark
 
-You can now run coala from the toplevel directory; it will read its settings
-from ``.coafile`` there:
-
-::
-
-  coala
-
-Some bears have additional requirements and they usually tell you about
-them in case they are missing.
+    # run the tests
+    pytest -v -rs --benchmark-skip --pyargs borg.testsuite
 
 
 Adding a compression algorithm
@@ -236,8 +348,8 @@ for easier use by packagers downstream.
 When a command is added, a command line flag changed, added or removed,
 the usage docs need to be rebuilt as well::
 
-  python setup.py build_usage
-  python setup.py build_man
+  python scripts/make.py build_usage
+  python scripts/make.py build_man
 
 However, we prefer to do this as part of our :ref:`releasing`
 preparations, so it is generally not necessary to update these when
@@ -326,8 +438,12 @@ Checklist:
 - Update ``CHANGES.rst``, based on ``git log $PREVIOUS_RELEASE..``.
 - Check version number of upcoming release in ``CHANGES.rst``.
 - Render ``CHANGES.rst`` via ``make html`` and check for markup errors.
-- Verify that ``MANIFEST.in`` and ``setup.py`` are complete.
-- ``python setup.py build_usage ; python setup.py build_man`` and commit.
+- Verify that ``MANIFEST.in``, ``pyproject.toml`` and ``setup.py`` are complete.
+- Run these commands and commit::
+
+    python scripts/make.py build_usage
+    python scripts/make.py build_man
+
 - Tag the release::
 
     git tag -s -m "tagged/signed release X.Y.Z" X.Y.Z
@@ -349,11 +465,15 @@ Checklist:
     scripts/sdist-sign X.Y.Z
     scripts/upload-pypi X.Y.Z test
     scripts/upload-pypi X.Y.Z
+
+  Note: the signature is not uploaded to PyPi any more, but we upload it to
+  github releases.
 - Put binaries into dist/borg-OSNAME and sign them:
 
   ::
 
     scripts/sign-binaries 201912312359
+
 - Close the release milestone on GitHub.
 - `Update borgbackup.org
   <https://github.com/borgbackup/borgbackup.github.io/pull/53/files>`_ with the
@@ -366,9 +486,10 @@ Checklist:
 
 - Create a GitHub release, include:
 
+  * pypi dist package and signature
   * Standalone binaries (see above for how to create them).
 
-    + For OS X, document the OS X Fuse version in the README of the binaries.
-      OS X FUSE uses a kernel extension that needs to be compatible with the
+    + For macOS, document the macFUSE version in the README of the binaries.
+      macFUSE uses a kernel extension that needs to be compatible with the
       code contained in the binary.
   * A link to ``CHANGES.rst``.

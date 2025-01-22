@@ -1,5 +1,5 @@
 # -*- mode: python -*-
-# this pyinstaller spec file is used to build borg binaries on posix platforms
+# this pyinstaller spec file is used to build borg binaries on posix platforms and Windows
 
 import os, sys
 
@@ -10,9 +10,9 @@ here = os.path.dirname(os.path.abspath(SPEC))
 basepath = os.path.abspath(os.path.join(here, '..'))
 
 if is_win32:
-    hiddenimports = []
+    hiddenimports = ['borghash']
 else:
-    hiddenimports = ['borg.platform.posix', 'pkg_resources.py2_warn', ]
+    hiddenimports = ['borg.platform.posix', 'pkg_resources.py2_warn', 'borghash']
 
 block_cipher = None
 
@@ -48,11 +48,12 @@ exe = EXE(pyz,
           debug=False,
           strip=False,
           upx=True,
-          console=True)
+          console=True,
+          icon='NONE')
 
 # Build a directory-based binary in addition to a packed
-# single file. This allows one to easily look at all included
-# files (e.g. without having to strace or halt the built binary
+# single file. This allows one to look at all included
+# files easily (e.g. without having to strace or halt the built binary
 # and introspect /tmp). Also avoids unpacking all libs when
 # running the app, which is better for app signing on various OS.
 slim_exe = EXE(pyz,

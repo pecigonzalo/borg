@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
-
 API_VERSION = '1.2_01'
 
 import errno
 import os
+import time
 from collections import namedtuple
 
-from .constants import CH_DATA, CH_ALLOC, CH_HOLE, MAX_DATA_SIZE, zeros
+from .constants import CH_DATA, CH_ALLOC, CH_HOLE, zeros
 
 from libc.stdlib cimport free
 
@@ -124,6 +123,53 @@ def sparsemap(fd=None, fh=-1):
         dseek(curr, os.SEEK_SET, fd, fh)
 
 
+class ChunkerFailing:
+    """
+    This is a very simple chunker for testing purposes.
+
+    Reads block_size chunks, starts failing at block <fail_start>, <fail_count> failures, then succeeds.
+    """
+    def __init__(self, block_size, map):
+        self.block_size = block_size
+        # one char per block: r/R = successful read, e/E = I/O Error, e.g.: "rrrrErrrEEr"
+        # blocks beyond the map will have same behaviour as the last map char indicates.
+        map = map.upper()
+        if not set(map).issubset({"R", "E"}):
+            raise ValueError("unsupported map character")
+        self.map = map
+        self.count = 0
+        self.chunking_time = 0.0  # not updated, just provided so that caller does not crash
+
+    def chunkify(self, fd=None, fh=-1):
+        """
+        Cut a file into chunks.
+
+        :param fd: Python file object
+        :param fh: OS-level file handle (if available),
+                   defaults to -1 which means not to use OS-level fd.
+        """
+        use_fh = fh >= 0
+        wanted = self.block_size
+        while True:
+            data = os.read(fh, wanted) if use_fh else fd.read(wanted)
+            got = len(data)
+            if got > 0:
+                idx = self.count if self.count < len(self.map) else -1
+                behaviour = self.map[idx]
+                if behaviour == "E":
+                    self.count += 1
+                    fname = None if use_fh else getattr(fd, "name", None)
+                    raise OSError(errno.EIO, "simulated I/O error", fname)
+                elif behaviour == "R":
+                    self.count += 1
+                    yield Chunk(data, size=got, allocation=CH_DATA)
+                else:
+                    raise ValueError("unsupported map character")
+            if got < wanted:
+                # we did not get enough data, looks like EOF.
+                return
+
+
 class ChunkerFixed:
     """
     This is a simple chunker for input data with data usually staying at same
@@ -136,9 +182,9 @@ class ChunkerFixed:
     It optionally supports:
 
     - a header block of different size
-    - using a sparsemap to only read data ranges and seek over hole ranges
+    - using a sparsemap to read only data ranges and seek over hole ranges
       for sparse files.
-    - using an externally given filemap to only read specific ranges from
+    - using an externally given filemap to read only specific ranges from
       a file.
 
     Note: the last block of a data or hole range may be less than the block size,
@@ -147,6 +193,7 @@ class ChunkerFixed:
     def __init__(self, block_size, header_size=0, sparse=False):
         self.block_size = block_size
         self.header_size = header_size
+        self.chunking_time = 0.0
         # should borg try to do sparse input processing?
         # whether it actually can be done depends on the input file being seekable.
         self.try_sparse = sparse and has_seek_hole
@@ -200,6 +247,7 @@ class ChunkerFixed:
                 offset = range_start
                 dseek(offset, os.SEEK_SET, fd, fh)
             while range_size:
+                started_chunking = time.monotonic()
                 wanted = min(range_size, self.block_size)
                 if is_data:
                     # read block from the range
@@ -219,6 +267,7 @@ class ChunkerFixed:
                 if got > 0:
                     offset += got
                     range_size -= got
+                    self.chunking_time += time.monotonic() - started_chunking
                     yield Chunk(data, size=got, allocation=allocation)
                 if got < wanted:
                     # we did not get enough data, looks like EOF.
@@ -229,7 +278,7 @@ cdef class Chunker:
     """
     Content-Defined Chunker, variable chunk sizes.
 
-    This chunker does quite some effort to mostly cut the same-content chunks, even if
+    This chunker makes quite some effort to cut mostly chunks of the same-content, even if
     the content moves to a different offset inside the file. It uses the buzhash
     rolling-hash algorithm to identify the chunk cutting places by looking at the
     content inside the moving window and computing the rolling hash value over the
@@ -238,6 +287,7 @@ cdef class Chunker:
     It also uses a per-repo random seed to avoid some chunk length fingerprinting attacks.
     """
     cdef _Chunker *chunker
+    cdef readonly float chunking_time
 
     def __cinit__(self, int seed, int chunk_min_exp, int chunk_max_exp, int hash_mask_bits, int hash_window_size):
         min_size = 1 << chunk_min_exp
@@ -247,6 +297,8 @@ cdef class Chunker:
         assert hash_window_size + min_size + 1 <= max_size, "too small max_size"
         hash_mask = (1 << hash_mask_bits) - 1
         self.chunker = chunker_init(hash_window_size, hash_mask, min_size, max_size, seed & 0xffffffff)
+        self.chunking_time = 0.0
+
 
     def chunkify(self, fd, fh=-1):
         """
@@ -267,6 +319,7 @@ cdef class Chunker:
         return self
 
     def __next__(self):
+        started_chunking = time.monotonic()
         data = chunker_process(self.chunker)
         got = len(data)
         # we do not have SEEK_DATA/SEEK_HOLE support in chunker_process C code,
@@ -277,6 +330,7 @@ cdef class Chunker:
             allocation = CH_ALLOC
         else:
             allocation = CH_DATA
+        self.chunking_time += time.monotonic() - started_chunking
         return Chunk(data, size=got, allocation=allocation)
 
 
@@ -287,6 +341,8 @@ def get_chunker(algo, *params, **kw):
     if algo == 'fixed':
         sparse = kw['sparse']
         return ChunkerFixed(*params, sparse=sparse)
+    if algo == 'fail':
+        return ChunkerFailing(*params)
     raise TypeError('unsupported chunker algo %r' % algo)
 
 

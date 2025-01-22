@@ -29,26 +29,12 @@ Configuring the system
 First, create the ``/etc/backups`` directory (as root).
 All configuration goes into this directory.
 
-Then, create ``/etc/backups/40-backup.rules`` with the following content (all on one line)::
+Find out the ID of the partition table of your backup disk (here assumed to be /dev/sdz):
+    lsblk --fs -o +PTUUID /dev/sdz
 
-    ACTION=="add", SUBSYSTEM=="bdi", DEVPATH=="/devices/virtual/bdi/*",
-    TAG+="systemd", ENV{SYSTEMD_WANTS}="automatic-backup.service"
+Then, create ``/etc/backups/80-backup.rules`` with the following content (all on one line)::
 
-.. topic:: Finding a more precise udev rule
-
-    If you always connect the drive(s) to the same physical hardware path, e.g. the same
-    eSATA port, then you can make a more precise udev rule.
-
-    Execute ``udevadm monitor`` and connect a drive to the port you intend to use.
-    You should see a flurry of events, find those regarding the `block` subsystem.
-    Pick the event whose device path ends in something similar to a device file name,
-    typically`sdX/sdXY`. Use the event's device path and replace `sdX/sdXY` after the
-    `/block/` part in the path with a star (\*). For example:
-    `DEVPATH=="/devices/pci0000:00/0000:00:11.0/ata3/host2/target2:0:0/2:0:0:0/block/*"`.
-
-    Reboot a few times to ensure that the hardware path does not change: on some motherboards
-    components of it can be random. In these cases you cannot use a more accurate rule,
-    or need to insert additional stars for matching the path.
+    ACTION=="add", SUBSYSTEM=="block", ENV{ID_PART_TABLE_UUID}=="<the PTUUID you just noted>", TAG+="systemd", ENV{SYSTEMD_WANTS}+="automatic-backup.service"
 
 The "systemd" tag in conjunction with the SYSTEMD_WANTS environment variable has systemd
 launch the "automatic-backup" service, which we will create next, as the
@@ -110,7 +96,7 @@ modify it to suit your needs (e.g. more backup sets, dumping databases etc.).
     # Mount file system if not already done. This assumes that if something is already
     # mounted at $MOUNTPOINT, it is the backup drive. It won't find the drive if
     # it was mounted somewhere else.
-    (mount | grep $MOUNTPOINT) || mount $partition_path $MOUNTPOINT
+    findmnt $MOUNTPOINT >/dev/null || mount $partition_path $MOUNTPOINT
     drive=$(lsblk --inverse --noheadings --list --paths --output name $partition_path | head --lines 1)
     echo "Drive path: $drive"
 
@@ -119,7 +105,7 @@ modify it to suit your needs (e.g. more backup sets, dumping databases etc.).
     #
 
     # Options for borg create
-    BORG_OPTS="--stats --one-file-system --compression lz4 --checkpoint-interval 86400"
+    BORG_OPTS="--stats --one-file-system --compression lz4"
 
     # Set BORG_PASSPHRASE or BORG_PASSCOMMAND somewhere around here, using export,
     # if encryption is used.
@@ -136,8 +122,8 @@ modify it to suit your needs (e.g. more backup sets, dumping databases etc.).
 
     # This is just an example, change it however you see fit
     borg create $BORG_OPTS \
-      --exclude /root/.cache \
-      --exclude /var/lib/docker/devicemapper \
+      --exclude root/.cache \
+      --exclude var/lib/docker/devicemapper \
       $TARGET::$DATE-$$-system \
       / /boot
 
@@ -145,7 +131,7 @@ modify it to suit your needs (e.g. more backup sets, dumping databases etc.).
     # Even if it isn't (add --exclude /home above), it probably makes sense
     # to have /home in a separate archive.
     borg create $BORG_OPTS \
-      --exclude 'sh:/home/*/.cache' \
+      --exclude 'sh:home/*/.cache' \
       $TARGET::$DATE-$$-home \
       /home/
 
@@ -164,21 +150,21 @@ modify it to suit your needs (e.g. more backup sets, dumping databases etc.).
     fi
 
 Create the ``/etc/backups/autoeject`` file to have the script automatically eject the drive
-after creating the backup. Rename the file to something else (e.g. ``/etc/backup/autoeject-no``)
+after creating the backup. Rename the file to something else (e.g. ``/etc/backups/autoeject-no``)
 when you want to do something with the drive after creating backups (e.g running check).
 
 Create the ``/etc/backups/backup-suspend`` file if the machine should suspend after completing
-the backup. Don't forget to physically disconnect the device before resuming,
+the backup. Don't forget to disconnect the device physically before resuming,
 otherwise you'll enter a cycle. You can also add an option to power down instead.
 
 Create an empty ``/etc/backups/backup.disks`` file, you'll register your backup drives
 there.
 
-The last part is to actually enable the udev rules and services:
+The last part is actually to enable the udev rules and services:
 
 .. code-block:: bash
 
-    ln -s /etc/backups/40-backup.rules /etc/udev/rules.d/40-backup.rules
+    ln -s /etc/backups/80-backup.rules /etc/udev/rules.d/80-backup.rules
     ln -s /etc/backups/automatic-backup.service /etc/systemd/system/automatic-backup.service
     systemctl daemon-reload
     udevadm control --reload
@@ -191,7 +177,7 @@ Find the UUID of the file system that backups should be stored on::
 
     lsblk -o+uuid,label
 
-Note the UUID into the ``/etc/backup/backup.disks`` file.
+Note the UUID into the ``/etc/backups/backup.disks`` file.
 
 Mount the drive to /mnt/backup.
 
@@ -212,7 +198,7 @@ Security considerations
 -----------------------
 
 The script as shown above will mount any file system with an UUID listed in
-``/etc/backup/backup.disks``. The UUID check is a safety / annoyance-reduction
+``/etc/backups/backup.disks``. The UUID check is a safety / annoyance-reduction
 mechanism to keep the script from blowing up whenever a random USB thumb drive is connected.
 It is not meant as a security mechanism. Mounting file systems and reading repository
 data exposes additional attack surfaces (kernel file system drivers,

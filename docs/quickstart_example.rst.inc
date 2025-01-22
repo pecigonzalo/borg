@@ -1,65 +1,62 @@
-1. Before a backup can be made a repository has to be initialized::
+1. Before a backup can be made, a repository has to be initialized::
 
-    $ borg init --encryption=repokey /path/to/repo
+    $ borg -r /path/to/repo repo-create --encryption=repokey-aes-ocb
 
-2. Backup the ``~/src`` and ``~/Documents`` directories into an archive called
-   *Monday*::
+2. Back up the ``~/src`` and ``~/Documents`` directories into an archive called
+   *docs*::
 
-    $ borg create /path/to/repo::Monday ~/src ~/Documents
+    $ borg -r /path/to/repo create docs ~/src ~/Documents
 
-3. The next day create a new archive called *Tuesday*::
+3. The next day create a new archive using the same archive name::
 
-    $ borg create --stats /path/to/repo::Tuesday ~/src ~/Documents
+    $ borg -r /path/to/repo create --stats docs ~/src ~/Documents
 
-   This backup will be a lot quicker and a lot smaller since only new never
+   This backup will be a lot quicker and a lot smaller since only new, never
    before seen data is stored. The ``--stats`` option causes Borg to
-   output statistics about the newly created archive such as the amount of unique
-   data (not shared with other archives)::
+   output statistics about the newly created archive such as the deduplicated
+   size (the amount of unique data not shared with other archives)::
 
-    ------------------------------------------------------------------------------
-    Archive name: Tuesday
-    Archive fingerprint: bd31004d58f51ea06ff735d2e5ac49376901b21d58035f8fb05dbf866566e3c2
-    Time (start): Tue, 2016-02-16 18:15:11
-    Time (end):   Tue, 2016-02-16 18:15:11
-
-    Duration: 0.19 seconds
-    Number of files: 127
-    ------------------------------------------------------------------------------
-                          Original size      Compressed size    Deduplicated size
-    This archive:                4.16 MB              4.17 MB             26.78 kB
-    All archives:                8.33 MB              8.34 MB              4.19 MB
-
-                          Unique chunks         Total chunks
-    Chunk index:                     132                  261
-    ------------------------------------------------------------------------------
+    Repository: /path/to/repo
+    Archive name: docs
+    Archive fingerprint: bcd1b53f9b4991b7afc2b339f851b7ffe3c6d030688936fe4552eccc1877718d
+    Time (start): Sat, 2022-06-25 20:21:43
+    Time (end):   Sat, 2022-06-25 20:21:43
+    Duration: 0.07 seconds
+    Utilization of max. archive size: 0%
+    Number of files: 699
+    Original size: 31.14 MB
+    Deduplicated size: 502 B
 
 4. List all archives in the repository::
 
-    $ borg list /path/to/repo
-    Monday                               Mon, 2016-02-15 19:14:44
-    Tuesday                              Tue, 2016-02-16 19:15:11
+    $ borg -r /path/to/repo repo-list
+    docs                                 Sat, 2022-06-25 20:21:14 [b80e24d2...b179f298]
+    docs                                 Sat, 2022-06-25 20:21:43 [bcd1b53f...1877718d]
 
-5. List the contents of the *Monday* archive::
+5. List the contents of the first archive::
 
-    $ borg list /path/to/repo::Monday
+    $ borg -r /path/to/repo list aid:b80e24d2
     drwxr-xr-x user   group          0 Mon, 2016-02-15 18:22:30 home/user/Documents
     -rw-r--r-- user   group       7961 Mon, 2016-02-15 18:22:30 home/user/Documents/Important.doc
     ...
 
-6. Restore the *Monday* archive by extracting the files relative to the current directory::
+6. Restore the first archive by extracting the files relative to the current directory::
 
-    $ borg extract /path/to/repo::Monday
+    $ borg -r /path/to/repo extract aid:b80e24d2
 
-7. Delete the *Monday* archive (please note that this does **not** free repo disk space)::
+7. Delete the first archive (please note that this does **not** free repo disk space)::
 
-    $ borg delete /path/to/repo::Monday
+    $ borg -r /path/to/repo delete aid:b80e24d2
+
+   Be careful if you use an archive NAME (and not an archive ID), that might match multiple archives!
+   Always first use with ``--dry-run`` and ``--list``!
 
 8. Recover disk space by compacting the segment files in the repo::
 
-    $ borg compact /path/to/repo
+    $ borg -r /path/to/repo compact -v
 
 .. Note::
-    Borg is quiet by default (it works on WARNING log level).
+    Borg is quiet by default (it defaults to WARNING log level).
     You can use options like ``--progress`` or ``--list`` to get specific
     reports during command execution.  You can also add the ``-v`` (or
     ``--verbose`` or ``--info``) option to adjust the log level to INFO to

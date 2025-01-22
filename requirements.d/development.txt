@@ -1,13 +1,14 @@
 setuptools >=45, !=60.6.0, !=60.7.0
 setuptools_scm
-pip
+pip !=24.2
+wheel
 virtualenv
-tox
+build
 pkgconfig
+tox
 pytest
 pytest-xdist
 pytest-cov
 pytest-benchmark
-Cython!=0.27
-twine
-python-dateutil
+Cython
+pre-commit
